@@ -12,6 +12,8 @@ export default function Index() {
     >
       <Text style={{color:"orange",fontSize:45,}}>Smart Canteen</Text>
       <Link href={"/is_signed_out/LoginScreen"}>sign in</Link>
+      <Link href={"/is_signed_out/signin"}>sign in given design</Link>
+
     </View>
   );
 }

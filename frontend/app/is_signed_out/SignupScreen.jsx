@@ -13,11 +13,16 @@ import { Ionicons } from "@expo/vector-icons";
 
 export default function SignupScreen() {
   const [name, setName] = useState("");
-  const [phoneNo, setPhoneNo] = useState("");
   const [password, setPassword] = useState("");
   const [hidePassword, setHidePassword] = useState(true);
   const [confirmPassword, setConfirmPassword] = useState("");
   const [hideConfirmPassword, setHideConfirmPassword] = useState(true);
+  
+    const [username, setUsername] = useState("");
+    const handleUsernameChange = (text) => {
+    const upperText = text.toUpperCase(); 
+    setUsername(upperText);
+    }
 
   const passwordsNotMatch =
     confirmPassword.length > 0 && password !== confirmPassword;
@@ -42,15 +47,17 @@ export default function SignupScreen() {
           />
         </View>
 
-        <View style={styles.inputContainer}>
-          <Ionicons name="call-outline" size={20} color="grey" />
-          <TextInput
-            placeholder="Enter your Phone Number"
-            style={styles.input}
-            value={phoneNo}
-            onChangeText={setPhoneNo}
-          />
-        </View>
+                <View style={styles.inputContainer}>
+                  <Ionicons name="person-outline" size={20} color="grey" />
+                  <TextInput 
+                    placeholder="Username" 
+                    style={styles.input} 
+                    value={username} 
+                    onChangeText={handleUsernameChange} 
+                    autoCapitalize="characters" 
+                    autoCorrect={false}
+                  />
+                </View>
 
         <View style={styles.inputContainer}>
           <Ionicons name="lock-closed-outline" size={20} color="grey" />
