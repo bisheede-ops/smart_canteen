@@ -1,7 +1,11 @@
 import { Text, View } from "react-native";
 import { Link } from "expo-router";
+import { auth } from "../../firebaseConfig"; // ✅ FIXED PATH
 
 export default function Index() {
+
+  console.log("Firebase App Name:", auth.app.name);
+
   return (
     <View
       style={{
@@ -10,10 +14,12 @@ export default function Index() {
         alignItems: "center",
       }}
     >
-      <Text style={{color:"orange",fontSize:45,}}>Smart Canteen</Text>
-      <Link href={"/is_signed_out/LoginScreen"}>sign in</Link>
-      <Link href={"/is_signed_out/signin"}>sign in given design</Link>
+      <Text style={{ color: "orange", fontSize: 45 }}>
+        Smart Canteen
+      </Text>
 
+      <Link href={"/is_signed_out/LoginScreen"}>sign in</Link>
     </View>
   );
 }
+

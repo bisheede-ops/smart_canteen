@@ -1,5 +1,6 @@
+
 import React, { useState } from "react";
-import {Link} from "expo-router";
+import { Link } from "expo-router";
 import {
   View,
   Text,
@@ -9,38 +10,71 @@ import {
   StatusBar,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
+import { auth } from "../../firebaseConfig";
+import { signInWithEmailAndPassword } from "firebase/auth";
 
 export default function LoginScreen() {
   const [username, setUsername] = useState("");
-  const handleUsernameChange = (text) => {
-  const upperText = text.toUpperCase(); 
-  setUsername(upperText);
-};
   const [password, setPassword] = useState("");
   const [hidePassword, setHidePassword] = useState(true);
+
+
+  const handleUsernameChange = (text) => setUsername(text.toUpperCase());
+
+
+ 
+const handleLogin = () => {
+  if (!username || !password) {
+    alert("Please enter username and password");
+    return;
+  }
+
+  const email = username + "@smartcanteen.com";
+
+  let role = "User";
+  if (/^IDK\d{2}IT\d{3,4}$/.test(username) || /^LIDK\d{2}IT\d{3,4}$/.test(username)) {
+    role = "Student";
+  } else if (/^KTU-F\d{3,5}$/.test(username)) {
+    role = "Staff";
+  } else if (username.toUpperCase() === "ADMIN") {
+    role = "Admin";
+  } else if (/^[A-Za-z]+$/.test(username)) {
+    role = "Delivery";
+  }
+  signInWithEmailAndPassword(auth, email, password)
+    .then((userCredential) => {
+      alert(`Logged in as ${username}, Role: ${role}`);
+    })
+    .catch((error) => alert(error.message));
+};
+
 
   return (
     <View style={styles.container}>
       <StatusBar barStyle="light-content" />
 
+   
       <View style={styles.header}>
         <Text style={styles.title}>Welcome Back</Text>
         <Text style={styles.subtitle}>Login to your account</Text>
       </View>
 
+ 
       <View style={styles.form}>
+       
         <View style={styles.inputContainer}>
           <Ionicons name="person-outline" size={20} color="grey" />
-          <TextInput 
-            placeholder="Username" 
-            style={styles.input} 
-            value={username} 
-            onChangeText={handleUsernameChange} 
-            autoCapitalize="characters" 
+          <TextInput
+            placeholder="Username"
+            style={styles.input}
+            value={username}
+            onChangeText={handleUsernameChange}
+            autoCapitalize="characters"
             autoCorrect={false}
           />
         </View>
 
+        
         <View style={styles.inputContainer}>
           <Ionicons name="lock-closed-outline" size={20} color="grey" />
           <TextInput
@@ -59,15 +93,17 @@ export default function LoginScreen() {
           </TouchableOpacity>
         </View>
 
-        <TouchableOpacity style={styles.button}>
+        
+        <TouchableOpacity style={styles.button} onPress={handleLogin}>
           <Text style={styles.buttonText}>Login</Text>
         </TouchableOpacity>
 
+        
         <View style={styles.footer}>
           <Text style={styles.footerText}>Don’t have an account?</Text>
-          <TouchableOpacity>
-            <Link href={"/is_signed_out/SignupScreen"}><Text style={styles.signup}>Sign Up</Text></Link>
-          </TouchableOpacity>
+          <Link href={"/is_signed_out/SignupScreen"}>
+            <Text style={styles.signup}> Sign Up</Text>
+          </Link>
         </View>
       </View>
     </View>
@@ -75,27 +111,11 @@ export default function LoginScreen() {
 }
 
 
-
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: "orange",
-  },
-  header: {
-    flex: 1,
-    justifyContent: "center",
-    paddingHorizontal: 30,
-  },
-  title: {
-    fontSize: 30,
-    fontWeight: "bold",
-    color: "black",
-  },
-  subtitle: {
-    fontSize: 16,
-    color: "black",
-    marginTop: 5,
-  },
+  container: { flex: 1, backgroundColor: "orange" },
+  header: { flex: 1, justifyContent: "center", paddingHorizontal: 30 },
+  title: { fontSize: 30, fontWeight: "bold", color: "black" },
+  subtitle: { fontSize: 16, color: "black", marginTop: 5 },
   form: {
     flex: 2,
     backgroundColor: "white",
@@ -112,41 +132,15 @@ const styles = StyleSheet.create({
     paddingVertical: 12,
     marginBottom: 15,
   },
-  input: {
-    flex: 1,
-    marginLeft: 10,
-    fontSize: 16,
-  },
-  forgot: {
-    alignItems: "flex-end",
-    marginBottom: 20,
-  },
-  forgotText: {
-    color: "orange",
-    fontWeight: "500",
-  },
+  input: { flex: 1, marginLeft: 10, fontSize: 16 },
   button: {
     backgroundColor: "orange",
     paddingVertical: 15,
     borderRadius: 12,
     alignItems: "center",
   },
-  buttonText: {
-    color: "black",
-    fontSize: 18,
-    fontWeight: "bold",
-  },
-  footer: {
-    flexDirection: "row",
-    justifyContent: "center",
-    marginTop: 20,
-  },
-  footerText: {
-    color: "black",
-  },
-  signup: {
-    color: "orange",
-    fontWeight: "bold",
-  },
-  
+  buttonText: { color: "black", fontSize: 18, fontWeight: "bold" },
+  footer: { flexDirection: "row", justifyContent: "center", marginTop: 20 },
+  footerText: { color: "black" },
+  signup: { color: "orange", fontWeight: "bold" },
 });

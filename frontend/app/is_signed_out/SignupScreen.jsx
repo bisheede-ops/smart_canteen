@@ -1,64 +1,96 @@
+
 import React, { useState } from "react";
-import { Link } from "expo-router";
-import {
-  View,
-  Text,
-  TextInput,
-  TouchableOpacity,
-  StyleSheet,
-  StatusBar,
-  ScrollView,
+import { Link, useRouter } from "expo-router";
+import { 
+  View, Text, TextInput, TouchableOpacity, StyleSheet, StatusBar, ScrollView 
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
+import { auth, db } from "../../firebaseConfig";
+import { createUserWithEmailAndPassword } from "firebase/auth";
+import { setDoc, doc } from "firebase/firestore";
 
 export default function SignupScreen() {
+  const router = useRouter();
+
   const [name, setName] = useState("");
+  const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
-  const [hidePassword, setHidePassword] = useState(true);
   const [confirmPassword, setConfirmPassword] = useState("");
+  const [hidePassword, setHidePassword] = useState(true);
   const [hideConfirmPassword, setHideConfirmPassword] = useState(true);
 
-  const [username, setUsername] = useState("");
-  const handleUsernameChange = (text) => {
-  const upperText = text.toUpperCase(); 
-  setUsername(upperText);
-  }
+  const handleSignUp = async () => {
+    if (!name || !username || !password || !confirmPassword) {
+      alert("Please fill all fields");
+      return;
+    }
+    if (password !== confirmPassword) {
+      alert("Passwords do not match");
+      return;
+    }
 
-  const passwordsNotMatch =
-    confirmPassword.length > 0 && password !== confirmPassword;
+    try {
+      
+      const email = username + "@smartcanteen.com";
+
+      let role = "";
+      if (/^IDK\d{2}IT\d{3,4}$/.test(username) || /^LIDK\d{2}IT\d{3,4}$/.test(username)) {
+        role = "student";
+      } else if (/^KTU-F\d{3,5}$/.test(username)) {
+        role = "staff";
+      } else if (username.toUpperCase() === "ADMIN") {
+        role = "Admin";
+      } else {
+        alert("Invalid username format. Only student, staff, or admin can sign up.");
+        return; 
+      }
+      
+      const userCredential = await createUserWithEmailAndPassword(auth, email, password);
+      const user = userCredential.user;
+      
+      await setDoc(doc(db, "users", user.uid), {
+        name,
+        username,
+        email,
+        role,
+      });
+
+      alert(`Account created as ${role}`);
+      router.push("/is_signed_out/LoginScreen");
+
+    } catch (error) {
+      alert(error.message);
+    }
+  };
 
   return (
     <View style={styles.container}>
       <StatusBar barStyle="light-content" />
-
       <View style={styles.header}>
-        <Text style={styles.title}>Create Account </Text>
+        <Text style={styles.title}>Create Account</Text>
         <Text style={styles.subtitle}>Sign up to get started</Text>
       </View>
 
       <ScrollView style={styles.form} showsVerticalScrollIndicator={false}>
+
+        <View style={styles.inputContainer}>
+          <Ionicons name="person-outline" size={20} color="grey" />
+          <TextInput placeholder="Full Name" style={styles.input} value={name} onChangeText={setName} />
+        </View>
+
+       
         <View style={styles.inputContainer}>
           <Ionicons name="person-outline" size={20} color="grey" />
           <TextInput
-            placeholder="Full Name"
+            placeholder="Username"
             style={styles.input}
-            value={name}
-            onChangeText={setName}
+            value={username}
+            onChangeText={(text) => setUsername(text.toUpperCase())}
+            autoCapitalize="characters"
           />
         </View>
 
-                <View style={styles.inputContainer}>
-                  <Ionicons name="person-outline" size={20} color="grey" />
-                  <TextInput 
-                    placeholder="Username" 
-                    style={styles.input} 
-                    value={username} 
-                    onChangeText={handleUsernameChange} 
-                    autoCapitalize="characters" 
-                    autoCorrect={false}
-                  />
-                </View>
-
+        
         <View style={styles.inputContainer}>
           <Ionicons name="lock-closed-outline" size={20} color="grey" />
           <TextInput
@@ -68,20 +100,14 @@ export default function SignupScreen() {
             value={password}
             onChangeText={setPassword}
           />
-          <TouchableOpacity
-            onPress={() => setHidePassword(!hidePassword)}
-          >
-            <Ionicons
-              name={hidePassword ? "eye-off-outline" : "eye-outline"}
-              size={20}
-              color="grey"
-            />
+          <TouchableOpacity onPress={() => setHidePassword(!hidePassword)}>
+            <Ionicons name={hidePassword ? "eye-off-outline" : "eye-outline"} size={20} color="grey" />
           </TouchableOpacity>
         </View>
 
+        
         <View style={styles.inputContainer}>
-          <Ionicons
-            name="shield-checkmark-outline" size={20} color="grey" />
+          <Ionicons name="shield-checkmark-outline" size={20} color="grey" />
           <TextInput
             placeholder="Confirm Password"
             style={styles.input}
@@ -89,34 +115,25 @@ export default function SignupScreen() {
             value={confirmPassword}
             onChangeText={setConfirmPassword}
           />
-          <TouchableOpacity
-            onPress={() =>
-              setHideConfirmPassword(!hideConfirmPassword)
-            }
-          >
-            <Ionicons
-              name={
-                hideConfirmPassword ? "eye-off-outline" : "eye-outline" }
-              size={20}
-              color="grey"
-            />
+          <TouchableOpacity onPress={() => setHideConfirmPassword(!hideConfirmPassword)}>
+            <Ionicons name={hideConfirmPassword ? "eye-off-outline" : "eye-outline"} size={20} color="grey" />
           </TouchableOpacity>
         </View>
 
-        {passwordsNotMatch && (
-          <Text style={styles.error}>
-            Passwords do not match
-          </Text>
+        {confirmPassword && password !== confirmPassword && (
+          <Text style={styles.error}>Passwords do not match</Text>
         )}
 
-        <TouchableOpacity style={[ styles.button, passwordsNotMatch && { opacity: 0.6 }, ]}  disabled={passwordsNotMatch} >
+        <TouchableOpacity
+          style={[styles.button, confirmPassword !== password && { opacity: 0.6 }]}
+          disabled={confirmPassword !== password}
+          onPress={handleSignUp}
+        >
           <Text style={styles.buttonText}>Sign Up</Text>
         </TouchableOpacity>
 
         <View style={styles.footer}>
-          <Text style={styles.footerText}>
-            Already have an account?
-          </Text>
+          <Text style={styles.footerText}>Already have an account?</Text>
           <Link href="/is_signed_out/LoginScreen">
             <Text style={styles.login}> Login</Text>
           </Link>
@@ -127,73 +144,21 @@ export default function SignupScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: "orange",
-  },
-  header: {
-    paddingTop: 60,
-    paddingHorizontal: 30,
-    paddingBottom: 20,
-  },
-  title: {
-    fontSize: 30,
-    fontWeight: "bold",
-    color: "black",
-  },
-  subtitle: {
-    fontSize: 16,
-    color: "black",
-    marginTop: 5,
-  },
-  form: {
-    backgroundColor: "white",
-    borderTopLeftRadius: 30,
-    borderTopRightRadius: 30,
-    padding: 30,
-    flex: 1,
-  },
-  inputContainer: {
-    flexDirection: "row",
-    alignItems: "center",
-    backgroundColor: "#F3F4F6",
-    borderRadius: 12,
-    paddingHorizontal: 15,
-    paddingVertical: 12,
-    marginBottom: 15,
-  },
-  input: {
-    flex: 1,
-    marginLeft: 10,
-    fontSize: 16,
-  },
-  button: {
-    backgroundColor: "orange",
-    paddingVertical: 15,
-    borderRadius: 12,
-    alignItems: "center",
-    marginTop: 10,
-  },
-  buttonText: {
-    color: "black",
-    fontSize: 18,
-    fontWeight: "bold",
-  },
-  error: {
-    color: "red",
-    marginBottom: 10,
-    fontSize: 14,
-  },
-  footer: {
-    flexDirection: "row",
-    justifyContent: "center",
-    marginTop: 20,
-  },
-  footerText: {
-    color: "black",
-  },
-  login: {
-    color: "orange",
-    fontWeight: "bold",
-  },
+  container: { flex: 1, backgroundColor: "orange" },
+  header: { paddingTop: 60, paddingHorizontal: 30, paddingBottom: 20 },
+  title: { fontSize: 30, fontWeight: "bold", color: "black" },
+  subtitle: { fontSize: 16, color: "black", marginTop: 5 },
+  form: { backgroundColor: "white", borderTopLeftRadius: 30, borderTopRightRadius: 30, padding: 30, flex: 1 },
+  inputContainer: { flexDirection: "row", alignItems: "center", backgroundColor: "#F3F4F6", borderRadius: 12, paddingHorizontal: 15, paddingVertical: 12, marginBottom: 15 },
+  input: { flex: 1, marginLeft: 10, fontSize: 16 },
+  button: { backgroundColor: "orange", paddingVertical: 15, borderRadius: 12, alignItems: "center", marginTop: 10 },
+  buttonText: { color: "black", fontSize: 18, fontWeight: "bold" },
+  error: { color: "red", marginBottom: 10, fontSize: 14 },
+  footer: { flexDirection: "row", justifyContent: "center", marginTop: 20 },
+  footerText: { color: "black" },
+  login: { color: "orange", fontWeight: "bold" },
 });
+
+
+
+
