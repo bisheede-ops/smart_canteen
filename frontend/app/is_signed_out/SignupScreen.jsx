@@ -17,12 +17,12 @@ export default function SignupScreen() {
   const [hidePassword, setHidePassword] = useState(true);
   const [confirmPassword, setConfirmPassword] = useState("");
   const [hideConfirmPassword, setHideConfirmPassword] = useState(true);
-  
-    const [username, setUsername] = useState("");
-    const handleUsernameChange = (text) => {
-    const upperText = text.toUpperCase(); 
-    setUsername(upperText);
-    }
+
+  const [username, setUsername] = useState("");
+  const handleUsernameChange = (text) => {
+  const upperText = text.toUpperCase(); 
+  setUsername(upperText);
+  }
 
   const passwordsNotMatch =
     confirmPassword.length > 0 && password !== confirmPassword;
