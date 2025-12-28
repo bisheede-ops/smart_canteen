@@ -1,6 +1,7 @@
 
 import React, { useState } from "react";
 import { Link } from "expo-router";
+import Toast from 'react-native-toast-message';
 import {
   View,
   Text,
@@ -31,8 +32,8 @@ const handleLogin = () => {
 
   const email = username + "@smartcanteen.com";
 
-  let role = "User";
-  if (/^IDK\d{2}IT\d{3,4}$/.test(username) || /^LIDK\d{2}IT\d{3,4}$/.test(username)) {
+  let role = "";
+  if (/^(L)?IDK\d{2}[A-Z]{2,3}\d{2,3}$/.test(username)) {
     role = "Student";
   } else if (/^KTU-F\d{3,5}$/.test(username)) {
     role = "Staff";
@@ -41,11 +42,32 @@ const handleLogin = () => {
   } else if (/^[A-Za-z]+$/.test(username)) {
     role = "Delivery";
   }
-  signInWithEmailAndPassword(auth, email, password)
-    .then((userCredential) => {
-      alert(`Logged in as ${username}, Role: ${role}`);
-    })
-    .catch((error) => alert(error.message));
+  // signInWithEmailAndPassword(auth, email, password)
+  //   .then((userCredential) => {
+  //     alert(`Logged in as ${username}, Role: ${role}`);
+  //   })
+  //   .catch((error) => alert(error.message));
+
+signInWithEmailAndPassword(auth, email, password)
+  .then(() => {
+    Toast.show({
+      type: 'success',
+      text1: `Logged in as ${username}`,
+      text2: `Role: ${role}`,
+      position: 'top',
+      visibilityTime: 3000,
+    });
+  })
+  .catch((error) => {
+    Toast.show({
+      type: 'error',
+      text1: 'Login failed',
+      text2: error.message,
+      position: 'top',
+      visibilityTime: 3000,
+    });
+  });
+
 };
 
 
@@ -106,6 +128,7 @@ const handleLogin = () => {
           </Link>
         </View>
       </View>
+      <Toast />
     </View>
   );
 }

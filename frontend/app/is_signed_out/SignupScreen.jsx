@@ -1,13 +1,11 @@
-
 import React, { useState } from "react";
 import { Link, useRouter } from "expo-router";
-import { 
-  View, Text, TextInput, TouchableOpacity, StyleSheet, StatusBar, ScrollView 
-} from "react-native";
+import { View, Text, TextInput, TouchableOpacity, StyleSheet, StatusBar, ScrollView } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { auth, db } from "../../firebaseConfig";
 import { createUserWithEmailAndPassword } from "firebase/auth";
 import { setDoc, doc } from "firebase/firestore";
+import Toast from 'react-native-toast-message';
 
 export default function SignupScreen() {
   const router = useRouter();
@@ -21,45 +19,40 @@ export default function SignupScreen() {
 
   const handleSignUp = async () => {
     if (!name || !username || !password || !confirmPassword) {
-      alert("Please fill all fields");
+      Toast.show({ type: 'error', text1: "Please fill all fields", position: 'top', visibilityTime: 3000 });
       return;
     }
+
     if (password !== confirmPassword) {
-      alert("Passwords do not match");
+      Toast.show({ type: 'error', text1: "Passwords do not match", position: 'top', visibilityTime: 3000 });
+      return;
+    }
+
+    const email = username + "@smartcanteen.com";
+
+    let role = "";
+    if (/^(L)?IDK\d{2}[A-Z]{2,3}\d{2,3}$/.test(username)) role = "student";
+    else if (/^KTU-F\d{3,5}$/.test(username)) role = "staff";
+    else {
+      Toast.show({ type: 'error', text1: "Invalid username format", text2: "Only student or staff can sign up", position: 'top', visibilityTime: 3000 });
       return;
     }
 
     try {
-      
-      const email = username + "@smartcanteen.com";
-
-      let role = "";
-      if (/^IDK\d{2}IT\d{3,4}$/.test(username) || /^LIDK\d{2}IT\d{3,4}$/.test(username)) {
-        role = "student";
-      } else if (/^KTU-F\d{3,5}$/.test(username)) {
-        role = "staff";
-      } else if (username.toUpperCase() === "ADMIN") {
-        role = "Admin";
-      } else {
-        alert("Invalid username format. Only student, staff, or admin can sign up.");
-        return; 
-      }
-      
       const userCredential = await createUserWithEmailAndPassword(auth, email, password);
       const user = userCredential.user;
-      
-      await setDoc(doc(db, "users", user.uid), {
-        name,
-        username,
-        email,
-        role,
-      });
 
-      alert(`Account created as ${role}`);
-      router.push("/is_signed_out/LoginScreen");
+      await setDoc(doc(db, "users", user.uid), { name, username, email, role });
+
+
+      Toast.show({ type: 'success', text1: `Account created`, text2: `Role: ${role}`, position: 'top', visibilityTime: 3000 });
+
+      setTimeout(() => {
+        router.push("/is_signed_out/LoginScreen");
+      }, 3000);
 
     } catch (error) {
-      alert(error.message);
+      Toast.show({ type: 'error', text1: "Signup failed", text2: error.message, position: 'top', visibilityTime: 3000 });
     }
   };
 
@@ -72,63 +65,35 @@ export default function SignupScreen() {
       </View>
 
       <ScrollView style={styles.form} showsVerticalScrollIndicator={false}>
-
         <View style={styles.inputContainer}>
           <Ionicons name="person-outline" size={20} color="grey" />
           <TextInput placeholder="Full Name" style={styles.input} value={name} onChangeText={setName} />
         </View>
 
-       
         <View style={styles.inputContainer}>
           <Ionicons name="person-outline" size={20} color="grey" />
-          <TextInput
-            placeholder="Username"
-            style={styles.input}
-            value={username}
-            onChangeText={(text) => setUsername(text.toUpperCase())}
-            autoCapitalize="characters"
-          />
+          <TextInput placeholder="Username" style={styles.input} value={username} onChangeText={(text) => setUsername(text.toUpperCase())} autoCapitalize="characters" />
         </View>
 
-        
         <View style={styles.inputContainer}>
           <Ionicons name="lock-closed-outline" size={20} color="grey" />
-          <TextInput
-            placeholder="Password"
-            style={styles.input}
-            secureTextEntry={hidePassword}
-            value={password}
-            onChangeText={setPassword}
-          />
+          <TextInput placeholder="Password" style={styles.input} secureTextEntry={hidePassword} value={password} onChangeText={setPassword} />
           <TouchableOpacity onPress={() => setHidePassword(!hidePassword)}>
             <Ionicons name={hidePassword ? "eye-off-outline" : "eye-outline"} size={20} color="grey" />
           </TouchableOpacity>
         </View>
 
-        
         <View style={styles.inputContainer}>
           <Ionicons name="shield-checkmark-outline" size={20} color="grey" />
-          <TextInput
-            placeholder="Confirm Password"
-            style={styles.input}
-            secureTextEntry={hideConfirmPassword}
-            value={confirmPassword}
-            onChangeText={setConfirmPassword}
-          />
+          <TextInput placeholder="Confirm Password" style={styles.input} secureTextEntry={hideConfirmPassword} value={confirmPassword} onChangeText={setConfirmPassword} />
           <TouchableOpacity onPress={() => setHideConfirmPassword(!hideConfirmPassword)}>
             <Ionicons name={hideConfirmPassword ? "eye-off-outline" : "eye-outline"} size={20} color="grey" />
           </TouchableOpacity>
         </View>
 
-        {confirmPassword && password !== confirmPassword && (
-          <Text style={styles.error}>Passwords do not match</Text>
-        )}
+        {confirmPassword && password !== confirmPassword && <Text style={styles.error}>Passwords do not match</Text>}
 
-        <TouchableOpacity
-          style={[styles.button, confirmPassword !== password && { opacity: 0.6 }]}
-          disabled={confirmPassword !== password}
-          onPress={handleSignUp}
-        >
+        <TouchableOpacity style={[styles.button, confirmPassword !== password && { opacity: 0.6 }]} disabled={confirmPassword !== password} onPress={handleSignUp}>
           <Text style={styles.buttonText}>Sign Up</Text>
         </TouchableOpacity>
 
@@ -139,6 +104,8 @@ export default function SignupScreen() {
           </Link>
         </View>
       </ScrollView>
+
+      <Toast />
     </View>
   );
 }
@@ -158,7 +125,3 @@ const styles = StyleSheet.create({
   footerText: { color: "black" },
   login: { color: "orange", fontWeight: "bold" },
 });
-
-
-
-
