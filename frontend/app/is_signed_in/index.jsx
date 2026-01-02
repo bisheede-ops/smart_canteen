@@ -12,7 +12,7 @@ export default function Index() {
 
     const timer = setTimeout(() => {
       router.push("/is_signed_out/LoginScreen");
-    }, 4000);
+    }, 1000);
 
     return () => clearTimeout(timer);
   }, []);

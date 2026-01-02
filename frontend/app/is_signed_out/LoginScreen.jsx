@@ -1,3 +1,4 @@
+import { SigninStyles as styles } from "../../assets/src/styles/SigninStyles";
 
 import React, { useState } from "react";
 import { Link } from "expo-router";
@@ -12,12 +13,14 @@ import {
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { auth } from "../../firebaseConfig";
+import { useRouter } from "expo-router";
 import { signInWithEmailAndPassword } from "firebase/auth";
 
 export default function LoginScreen() {
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [hidePassword, setHidePassword] = useState(true);
+  const router = useRouter();
 
 
   const handleUsernameChange = (text) => setUsername(text.toUpperCase());
@@ -34,19 +37,14 @@ const handleLogin = () => {
 
   let role = "";
   if (/^(L)?IDK\d{2}[A-Z]{2,3}\d{2,3}$/.test(username)) {
-    role = "Student";
+    role = "student";
   } else if (/^KTU-F\d{3,5}$/.test(username)) {
-    role = "Staff";
+    role = "staff";
   } else if (username.toUpperCase() === "ADMIN") {
-    role = "Admin";
+    role = "admin";
   } else if (/^[A-Za-z]+$/.test(username)) {
-    role = "Delivery";
+    role = "delivery";
   }
-  // signInWithEmailAndPassword(auth, email, password)
-  //   .then((userCredential) => {
-  //     alert(`Logged in as ${username}, Role: ${role}`);
-  //   })
-  //   .catch((error) => alert(error.message));
 
 signInWithEmailAndPassword(auth, email, password)
   .then(() => {
@@ -57,6 +55,21 @@ signInWithEmailAndPassword(auth, email, password)
       position: 'top',
       visibilityTime: 3000,
     });
+     setTimeout(() => {
+        if (role === "student" || role === "staff") {
+          router.push("/is_signed_in/student_staff/HomeScreen");
+        } else if (role === "admin") {
+          router.push("/is_signed_in/Admin/HomeScreen");
+        } else if (role === "delivery") {
+          router.push("/is_signed_in/delivery/HomeScreen");
+        } else {
+          Toast.show({
+            type: "error",
+            text1: "Invalid role",
+            text2: "Please contact admin",
+          });
+        }
+      }, 1000);
   })
   .catch((error) => {
     Toast.show({
@@ -134,36 +147,4 @@ signInWithEmailAndPassword(auth, email, password)
 }
 
 
-const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: "orange" },
-  header: { flex: 1, justifyContent: "center", paddingHorizontal: 30 },
-  title: { fontSize: 30, fontWeight: "bold", color: "black" },
-  subtitle: { fontSize: 16, color: "black", marginTop: 5 },
-  form: {
-    flex: 2,
-    backgroundColor: "white",
-    borderTopLeftRadius: 30,
-    borderTopRightRadius: 30,
-    padding: 30,
-  },
-  inputContainer: {
-    flexDirection: "row",
-    alignItems: "center",
-    backgroundColor: "#F3F4F6",
-    borderRadius: 12,
-    paddingHorizontal: 15,
-    paddingVertical: 12,
-    marginBottom: 15,
-  },
-  input: { flex: 1, marginLeft: 10, fontSize: 16 },
-  button: {
-    backgroundColor: "orange",
-    paddingVertical: 15,
-    borderRadius: 12,
-    alignItems: "center",
-  },
-  buttonText: { color: "black", fontSize: 18, fontWeight: "bold" },
-  footer: { flexDirection: "row", justifyContent: "center", marginTop: 20 },
-  footerText: { color: "black" },
-  signup: { color: "orange", fontWeight: "bold" },
-});
+
