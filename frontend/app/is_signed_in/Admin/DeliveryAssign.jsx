@@ -8,7 +8,14 @@ import {
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Ionicons } from "@expo/vector-icons";
-import { collection, getDocs, updateDoc, doc, query, where } from "firebase/firestore";
+import {
+  collection,
+  getDocs,
+  updateDoc,
+  doc,
+  query,
+  where,
+} from "firebase/firestore";
 import { useRouter } from "expo-router";
 import Toast from "react-native-toast-message";
 import { db } from "../../../firebaseConfig";
@@ -22,57 +29,90 @@ export default function AdminOrderPage() {
   const [agents, setAgents] = useState([]);
 
   useEffect(() => {
-    const fetchData = async () => {
-      try {
-        // Fetch only orders where toBeDelivered is true
-        const ordersQuery = query(collection(db, "food_ordered"), where("toBeDelivered", "==", true));
-        const ordersSnap = await getDocs(ordersQuery);
-        const ordersList = ordersSnap.docs.map((d) => ({
-          id: d.id,
-          ...d.data(),
-        }));
-        setOrders(ordersList);
-
-        // Fetch all delivery agents (document ID is the username)
-        const agentsSnap = await getDocs(collection(db, "delivery_agents"));
-        const agentsList = agentsSnap.docs.map((d) => d.id); // document ID as username
-        setAgents(agentsList);
-      } catch (err) {
-        console.error(err);
-        Toast.show({
-          type: "error",
-          text1: "Fetch Failed",
-          text2: "Unable to fetch orders or agents",
-          position: "top",
-        });
-      }
-    };
-    fetchData();
+    fetchOrdersAndAgents();
   }, []);
 
-  const assignAgent = async (orderId, agentUsername) => {
-    if (!agentUsername || !orderId) return;
+  const fetchOrdersAndAgents = async () => {
+    try {
+      /* 🔹 Fetch pending orders */
+      const ordersQuery = query(
+        collection(db, "food_ordered"),
+        where("toBeDelivered", "==", true)
+      );
 
+      const ordersSnap = await getDocs(ordersQuery);
+      const ordersList = ordersSnap.docs.map((d) => ({
+        id: d.id,
+        ...d.data(),
+      }));
+      setOrders(ordersList);
+
+      /* 🔹 Fetch ACTIVE delivery agents */
+      const agentsQuery = query(
+        collection(db, "delivery_agents"),
+        where("status", "==", "active")
+      );
+
+      const agentsSnap = await getDocs(agentsQuery);
+      const agentsList = agentsSnap.docs.map((d) => ({
+        uid: d.id,
+        ...d.data(),
+      }));
+
+      setAgents(agentsList);
+    } catch (err) {
+      console.error(err);
+      Toast.show({
+        type: "error",
+        text1: "Fetch Failed",
+        text2: "Unable to fetch orders or agents",
+        position: "top",
+      });
+    }
+  };
+
+  const assignAgent = async (orderId, agent) => {
     try {
       const orderRef = doc(db, "food_ordered", orderId);
-      await updateDoc(orderRef, { deliveryBy: agentUsername });
+
+      await updateDoc(orderRef, {
+        deliveryAgentId: agent.uid,
+        deliveryAgentName: agent.name,
+        deliveryBy:agent.username,
+        delivered:false,
+      });
 
       Toast.show({
         type: "success",
         text1: "Assigned ✅",
-        text2: `Order assigned to ${agentUsername}`,
+        text2: `Assigned to ${agent.name}`,
         position: "top",
       });
+      const agentRef = doc(db, "delivery_agent", agentUid);
+        await updateDoc(agentRef, {
+          total_order: increment(1),
+      });
+      
+
 
       setOrders((prev) =>
-        prev.map((o) => (o.id === orderId ? { ...o, deliveryBy: agentUsername } : o))
+        prev.map((o) =>
+          o.id === orderId
+            ? {
+                ...o,
+                deliveryAgentId: agent.uid,
+                deliveryAgentName: agent.name,
+                deliveryBy:agent.username,
+                delivered:false,
+              }
+            : o
+        )
       );
     } catch (err) {
       console.error(err);
       Toast.show({
         type: "error",
         text1: "Assignment Failed",
-        text2: "Could not assign delivery agent",
         position: "top",
       });
     }
@@ -81,30 +121,32 @@ export default function AdminOrderPage() {
   const renderOrder = ({ item }) => (
     <View style={styles.orderCard}>
       <Text style={styles.orderText}>
-        <Text style={{ fontWeight: "bold" }}>User:</Text> {item.username}
+        <Text style={styles.bold}>User:</Text> {item.username}
       </Text>
       <Text style={styles.orderText}>
-        <Text style={{ fontWeight: "bold" }}>Food:</Text> {item.foodName} x {item.quantity}
+        <Text style={styles.bold}>Food:</Text> {item.foodName} x {item.quantity}
       </Text>
       <Text style={styles.orderText}>
-        <Text style={{ fontWeight: "bold" }}>Price:</Text> ₹{item.price}
+        <Text style={styles.bold}>Price:</Text> ₹{item.price}
       </Text>
 
-      {item.deliveryBy ? (
-        <Text style={{ fontWeight: "bold", marginTop: 5 }}>
-          Assigned to: {item.deliveryBy}
+      {item.deliveryAgentId ? (
+        <Text style={styles.assigned}>
+          Assigned to: {item.deliveryAgentName}
         </Text>
       ) : (
         <>
-          <Text style={{ marginTop: 5, fontWeight: "bold" }}>Assign Agent:</Text>
+          <Text style={styles.assignTitle}>Assign Agent:</Text>
           <View style={styles.agentsRow}>
-            {agents.map((agent, index) => (
+            {agents.map((agent) => (
               <TouchableOpacity
-                key={`${agent}-${index}`}
+                key={agent.uid}
                 style={styles.agentButton}
                 onPress={() => assignAgent(item.id, agent)}
               >
-                <Text style={styles.agentText}>{agent}</Text>
+                <Text style={styles.agentText}>
+                  {agent.name} ({agent.username})
+                </Text>
               </TouchableOpacity>
             ))}
           </View>
@@ -124,6 +166,7 @@ export default function AdminOrderPage() {
         contentContainerStyle={{ paddingBottom: 90 }}
       />
 
+      {/* BOTTOM NAV */}
       <View style={styles.navbar}>
         <NavItem
           icon="home"
@@ -135,12 +178,7 @@ export default function AdminOrderPage() {
           label="Delivery"
           onPress={() => router.push("/is_signed_in/Admin/AddDeliveryAgent")}
         />
-        <NavItem
-          icon="receipt-outline"
-          label="Orders"
-          active
-          onPress={() => router.push("/is_signed_in/Admin/OrderPage")}
-        />
+        <NavItem icon="receipt-outline" label="Orders" active />
         <NavItem
           icon="person-outline"
           label="Profile"
@@ -155,20 +193,21 @@ export default function AdminOrderPage() {
 
 function NavItem({ icon, label, onPress, active }) {
   return (
-    <TouchableOpacity
-      style={styles.navItem}
-      onPress={onPress}
-      activeOpacity={0.7}
-    >
+    <TouchableOpacity style={styles.navItem} onPress={onPress}>
       <Ionicons name={icon} size={24} color={active ? ORANGE : INACTIVE} />
-      <Text style={[styles.navText, active && { color: ORANGE, fontWeight: "bold" }]}>{label}</Text>
+      <Text style={[styles.navText, active && styles.active]}>{label}</Text>
     </TouchableOpacity>
   );
 }
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: "#FFF7ED", paddingTop: 10 },
-  title: { fontSize: 22, fontWeight: "bold", marginBottom: 15, paddingHorizontal: 20 },
+  title: {
+    fontSize: 22,
+    fontWeight: "bold",
+    marginBottom: 15,
+    paddingHorizontal: 20,
+  },
   orderCard: {
     backgroundColor: "#fff",
     padding: 15,
@@ -179,6 +218,9 @@ const styles = StyleSheet.create({
     marginHorizontal: 20,
   },
   orderText: { fontSize: 14, marginBottom: 4 },
+  bold: { fontWeight: "bold" },
+  assigned: { fontWeight: "bold", marginTop: 5, color: "green" },
+  assignTitle: { marginTop: 5, fontWeight: "bold" },
   agentsRow: { flexDirection: "row", flexWrap: "wrap", marginTop: 5 },
   agentButton: {
     backgroundColor: ORANGE,
@@ -188,20 +230,20 @@ const styles = StyleSheet.create({
     marginRight: 8,
     marginBottom: 5,
   },
-  agentText: { color: "#fff", fontWeight: "bold" },
+  agentText: { color: "#fff", fontWeight: "bold", fontSize: 12 },
   navbar: {
     flexDirection: "row",
     justifyContent: "space-around",
     alignItems: "center",
     height: 65,
-    backgroundColor: "#FFFFFF",
+    backgroundColor: "#fff",
     borderTopWidth: 1,
     borderTopColor: "#FFE0B2",
     position: "absolute",
     bottom: 0,
     width: "100%",
-    zIndex: 999,
   },
-  navItem: { alignItems: "center", justifyContent: "center" },
+  navItem: { alignItems: "center" },
   navText: { fontSize: 11, color: "#888", marginTop: 2 },
+  active: { color: ORANGE, fontWeight: "bold" },
 });

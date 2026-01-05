@@ -28,8 +28,10 @@ export default function OrderPage() {
   const [username, setUsername] = useState("");
   const [foodName, setFoodName] = useState("");
   const [quantity, setQuantity] = useState("");
-  const [price, setPrice] = useState("");
-  const [toBeDelivered, setToBeDelivered] = useState(true);
+  const [place, setPlace] = useState("");
+
+  // ✅ DELIVERY IS OFF BY DEFAULT
+  const [toBeDelivered, setToBeDelivered] = useState(false);
 
   /* 🔹 FETCH LOGGED-IN USERNAME */
   useEffect(() => {
@@ -42,9 +44,7 @@ export default function OrderPage() {
         const snap = await getDoc(userRef);
 
         if (snap.exists()) {
-          setUsername(
-            snap.data().username || snap.data().name || "unknown"
-          );
+          setUsername(snap.data().username || snap.data().name || "unknown");
         }
       } catch (err) {
         console.error(err);
@@ -55,11 +55,22 @@ export default function OrderPage() {
   }, []);
 
   const placeOrder = async () => {
-    if (!username || !foodName || !quantity || !price) {
+    // ✅ BASIC VALIDATION
+    if (!username || !foodName || !quantity) {
       Toast.show({
         type: "error",
         text1: "Missing details",
         text2: "Please fill all required fields",
+        position: "top",
+      });
+      return;
+    }
+
+    // ✅ PLACE REQUIRED ONLY IF DELIVERY IS ON
+    if (toBeDelivered && !place) {
+      Toast.show({
+        type: "error",
+        text1: "Delivery place required",
         position: "top",
       });
       return;
@@ -70,30 +81,29 @@ export default function OrderPage() {
         username,
         foodName,
         quantity: Number(quantity),
-        price: Number(price),
+        place: toBeDelivered ? place : "", // ✅ SAFE
         toBeDelivered,
-        deliveryBy:"",
+        deliveryBy: "",
         time: serverTimestamp(),
       });
 
       Toast.show({
         type: "success",
         text1: "Order Placed",
-        text2: "Food order stored successfully",
-        position: "top",
         visibilityTime: 2000,
+        position: "top",
       });
 
+      // RESET
       setFoodName("");
       setQuantity("");
-      setPrice("");
-      setToBeDelivered(true);
+      setPlace("");
+      setToBeDelivered(false);
     } catch (error) {
       console.error(error);
       Toast.show({
         type: "error",
         text1: "Order Failed",
-        text2: "Something went wrong",
         position: "top",
       });
     }
@@ -108,9 +118,7 @@ export default function OrderPage() {
         <Text style={styles.label}>Logged in as</Text>
         <View style={styles.userBox}>
           <Ionicons name="person-outline" size={18} color={ORANGE} />
-          <Text style={styles.usernameText}>
-            {username || "Loading..."}
-          </Text>
+          <Text style={styles.usernameText}>{username || "Loading..."}</Text>
         </View>
 
         <Input label="Food Name" value={foodName} onChange={setFoodName} />
@@ -120,14 +128,8 @@ export default function OrderPage() {
           onChange={setQuantity}
           keyboard="number-pad"
         />
-        <Input
-          label="Price (₹)"
-          value={price}
-          onChange={setPrice}
-          keyboard="number-pad"
-        />
 
-        {/* DELIVERY TOGGLE */}
+        {/* ✅ DELIVERY TOGGLE */}
         <TouchableOpacity
           style={styles.toggleRow}
           onPress={() => setToBeDelivered(!toBeDelivered)}
@@ -140,6 +142,11 @@ export default function OrderPage() {
           <Text style={styles.toggleText}>To be delivered</Text>
         </TouchableOpacity>
 
+        {/* ✅ PLACE INPUT ONLY IF DELIVERY IS SELECTED */}
+        {toBeDelivered && (
+          <Input label="Delivery Place" value={place} onChange={setPlace} />
+        )}
+
         {/* BUTTON */}
         <TouchableOpacity style={styles.button} onPress={placeOrder}>
           <Ionicons name="cart-outline" size={20} color="#fff" />
@@ -149,22 +156,30 @@ export default function OrderPage() {
 
       {/* NAVBAR */}
       <View style={styles.navbar}>
-        <NavItem icon="home" label="Home" onPress={() =>
-          router.push("/is_signed_in/student_staff/HomeScreen")
-        } />
-        <NavItem icon="restaurant-outline" label="Menu" onPress={() =>
-          router.push("/is_signed_in/student_staff/ShowMenu")
-        } />
+        <NavItem
+          icon="home"
+          label="Home"
+          onPress={() => router.push("/is_signed_in/student_staff/HomeScreen")}
+        />
+        <NavItem
+          icon="restaurant-outline"
+          label="Menu"
+          onPress={() => router.push("/is_signed_in/student_staff/ShowMenu")}
+        />
         <NavItem icon="receipt-outline" label="Orders" active />
-        <NavItem icon="person-outline" label="Profile" onPress={() =>
-          router.push("/is_signed_in/student_staff/ProfileScreen")
-        } />
+        <NavItem
+          icon="person-outline"
+          label="Profile"
+          onPress={() =>
+            router.push("/is_signed_in/student_staff/ProfileScreen")
+          }
+        />
       </View>
     </SafeAreaView>
   );
 }
 
-/* ---------- COMPONENTS ---------- */
+/* ---------- REUSABLE COMPONENTS ---------- */
 
 function Input({ label, value, onChange, keyboard }) {
   return (
@@ -183,11 +198,7 @@ function Input({ label, value, onChange, keyboard }) {
 function NavItem({ icon, label, onPress, active }) {
   return (
     <TouchableOpacity style={styles.navItem} onPress={onPress}>
-      <Ionicons
-        name={icon}
-        size={24}
-        color={active ? ORANGE : INACTIVE}
-      />
+      <Ionicons name={icon} size={24} color={active ? ORANGE : INACTIVE} />
       <Text
         style={[
           styles.navText,
@@ -225,11 +236,7 @@ const styles = StyleSheet.create({
     borderColor: "#ddd",
     marginBottom: 15,
   },
-  usernameText: {
-    marginLeft: 8,
-    fontWeight: "bold",
-    color: "#333",
-  },
+  usernameText: { marginLeft: 8, fontWeight: "bold" },
   toggleRow: { flexDirection: "row", alignItems: "center", marginVertical: 10 },
   toggleText: { marginLeft: 8 },
   button: {

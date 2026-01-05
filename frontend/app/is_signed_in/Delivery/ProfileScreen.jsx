@@ -1,55 +1,64 @@
-import React, { useState, useEffect } from "react";
+import React, { useEffect, useState } from "react";
 import {
   View,
   Text,
   StyleSheet,
   Image,
   TouchableOpacity,
+  ActivityIndicator,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
 import { doc, getDoc } from "firebase/firestore";
+import { onAuthStateChanged } from "firebase/auth";
 import { db, auth } from "../../../firebaseConfig";
 
 const ORANGE = "#FF7A00";
 
 export default function ProfileScreen() {
   const router = useRouter();
-  const [user, setUser] = useState(null);
+  const [agent, setAgent] = useState(null);
+  const [loading, setLoading] = useState(true);
 
-  // Fetch user data from Firestore
   useEffect(() => {
-    const fetchUserData = async () => {
+    const unsubscribe = onAuthStateChanged(auth, async (user) => {
+      if (!user) {
+        router.replace("/is_signed_out/LoginScreen");
+        return;
+      }
+
       try {
-        const uid = auth.currentUser?.uid;
-        if (!uid) return;
+        const agentRef = doc(db, "delivery_agents", user.uid);
+        const agentSnap = await getDoc(agentRef);
 
-        const docRef = doc(db, "users", uid); 
-        const docSnap = await getDoc(docRef);
-
-        if (docSnap.exists()) {
-          setUser(docSnap.data());
+        if (agentSnap.exists()) {
+          setAgent(agentSnap.data());
         } else {
-          console.log("No such user in Firestore!");
+          console.log("Delivery agent not found in Firestore");
         }
       } catch (error) {
-        console.error("Error fetching user:", error);
+        console.error("Error fetching agent profile:", error);
+      } finally {
+        setLoading(false);
       }
-    };
+    });
 
-    fetchUserData();
+    return unsubscribe;
   }, []);
 
-  // Logout function
   const handleLogout = async () => {
-    try {
-      await auth.signOut();
-      router.push("/is_signed_out/LoginScreen");
-    } catch (error) {
-      console.error("Logout Error:", error);
-    }
+    await auth.signOut();
+    router.replace("/is_signed_out/LoginScreen");
   };
+
+  if (loading) {
+    return (
+      <View style={styles.loader}>
+        <ActivityIndicator size="large" color={ORANGE} />
+      </View>
+    );
+  }
 
   return (
     <SafeAreaView style={styles.container}>
@@ -62,17 +71,11 @@ export default function ProfileScreen() {
           style={styles.avatar}
         />
 
-        {user ? (
-          <>
-            <Text style={styles.name}>{user.name}</Text>
-            <Text style={styles.role}>{user.role}</Text>
-            <Text style={styles.userId}>{user.username}</Text>
-          </>
-        ) : (
-          <Text>Loading...</Text>
-        )}
+        <Text style={styles.name}>{agent?.name || "Delivery Agent"}</Text>
+        <Text style={styles.role}>Delivery Agent</Text>
+        <Text style={styles.userId}>{agent?.username || ""}</Text>
 
-        {/* 🔹 Logout Button */}
+        {/* Logout */}
         <TouchableOpacity style={styles.logoutBtn} onPress={handleLogout}>
           <Ionicons name="log-out-outline" size={20} color="#FFF" />
           <Text style={styles.logoutText}>Logout</Text>
@@ -84,34 +87,29 @@ export default function ProfileScreen() {
         <NavItem
           icon="home-outline"
           label="Home"
-          onPress={() =>
-            router.push("/is_signed_in/student_staff/HomeScreen")
-          }
+          onPress={() => router.push("/is_signed_in/Delivery/HomeScreen")}
         />
 
         <NavItem
-          icon="restaurant-outline"
-          label="Menu"
+          icon="receipt-outline"
+          label="To Deliver"
           onPress={() =>
-            router.push("/is_signed_in/student_staff/ShowMenu")
+            router.push("/is_signed_in/Delivery/Orders")
           }
         />
 
         <NavItem
           icon="receipt-outline"
-          label="Orders"
+          label="Delivered"
           onPress={() =>
-            router.push("/is_signed_in/student_staff/orders")
+            router.push("/is_signed_in/Delivery/OrderHistory")
           }
         />
-
         <NavItem
           icon="person"
           label="Profile"
           active
-          onPress={() =>
-            router.push("/is_signed_in/student_staff/ProfileScreen")
-          }
+          onPress={() => router.push("/is_signed_in/Delivery/ProfileScreen")}
         />
       </View>
     </SafeAreaView>
@@ -120,11 +118,7 @@ export default function ProfileScreen() {
 
 function NavItem({ icon, label, onPress, active, danger }) {
   return (
-    <TouchableOpacity
-      style={styles.navItem}
-      onPress={onPress}
-      activeOpacity={0.7}
-    >
+    <TouchableOpacity style={styles.navItem} onPress={onPress}>
       <Ionicons
         name={icon}
         size={24}
@@ -134,7 +128,6 @@ function NavItem({ icon, label, onPress, active, danger }) {
         style={[
           styles.navText,
           active && { color: ORANGE, fontWeight: "bold" },
-          danger && { color: "#E53935" },
         ]}
       >
         {label}
@@ -147,6 +140,11 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: "#FFF4EB",
+  },
+  loader: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
   },
   content: {
     flex: 1,
@@ -175,13 +173,6 @@ const styles = StyleSheet.create({
     color: "#999",
     marginTop: 2,
   },
-  email: {
-    fontSize: 13,
-    color: "#777",
-    marginTop: 6,
-  },
-
-  /* 🔹 Logout button style */
   logoutBtn: {
     flexDirection: "row",
     alignItems: "center",
@@ -197,7 +188,6 @@ const styles = StyleSheet.create({
     fontSize: 16,
     marginLeft: 8,
   },
-
   navbar: {
     flexDirection: "row",
     justifyContent: "space-around",

@@ -1,169 +1,133 @@
-import React, { useState, useEffect } from "react";
-import {
-  View,
-  Text,
-  StyleSheet,
-  TouchableOpacity,
-  ScrollView,
-} from "react-native";
-import { SafeAreaView } from "react-native-safe-area-context";
+
 import { Ionicons } from "@expo/vector-icons";
-import { useRouter } from "expo-router";
-import { auth, db } from "../../../firebaseConfig";
-import { doc, getDoc } from "firebase/firestore";
+import { router } from "expo-router";
+import { StyleSheet, Text, TouchableOpacity, View } from "react-native";
 
-import { HomeStyles as styles, ORANGE } from "@/assets/src/styles/HomeStyles";
+/* ---------- MAIN DASHBOARD ITEMS ---------- */
+const gridItems = [
+  {
+    title: "Menu",
+    subtitle: "View food items",
+    onPress: () => router.push("is_signed_in/Admin/MenuScreen"),
+  },
+  {
+    title: "Delivery Agent",
+    subtitle: "Add new agent",
+    onPress: () => router.push("is_signed_in/Admin/AddDeliveryAgent"),
+  },
+  { title: "Emergency Meal", subtitle: "Instant food" },
+  { title: "Special Food", subtitle: "Today's special" },
+  { title: "Subscription", subtitle: "Weekly plan" },
+  { title: "Token", subtitle: "Generate token" },
+  {
+    title: "Assign Details",
+    subtitle: "Pass details to delivery agent",
+    onPress: () => router.push("/is_signed_in/Admin/DeliveryAssign"),
+  },
+  {
+    title: "Feedback",
+    subtitle: "Suggestions and Reviews",
+  },
+];
 
-export default function HomeScreen() {
-  const router = useRouter();
-  const [user, setUser] = useState(null);
-
-  useEffect(() => {
-    const fetchUserData = async () => {
-      try {
-        const uid = auth.currentUser?.uid;
-        if (!uid) return;
-
-        const docRef = doc(db, "users", uid);
-        const docSnap = await getDoc(docRef);
-
-        if (docSnap.exists()) {
-          setUser(docSnap.data());
-        } else {
-          console.log("No such user in Firestore!");
-        }
-      } catch (error) {
-        console.error("Error fetching user:", error);
-      }
-    };
-
-    fetchUserData();
-  }, []);
+export default function Index() {
+  const handleLogout = () => {
+    // Later you can add Firebase signOut here
+    router.push("is_signed_in/Admin/ProfileScreen");
+  };
 
   return (
-    <SafeAreaView style={styles.container}>
-      <ScrollView contentContainerStyle={styles.content}>
-        <View style={styles.header}>
-          <Text style={styles.welcome}>Welcome,</Text>
-          <Text style={styles.name}>{user ? user.name : ""}</Text>
-        </View>
+    <View style={styles.container}>
+      {/* ---------- HEADER ---------- */}
+      <View style={styles.header}>
+        <Text style={styles.appName}>SmartCanteen</Text>
 
-        <View style={styles.actions}>
-          <ActionCard
-            icon="restaurant-outline"
-            label="View Menu"
-            onPress={() =>
-              router.push("/is_signed_in/Admin/ShowMenu")
-            }
-          />
-          <ActionCard
-            icon="receipt-outline"
-            label="Add Menu"
-            onPress={() =>
-              router.push("/is_signed_in/Admin/AddNewMenu")
-            }
-          />
-          <ActionCard
-            icon="bicycle-outline"
-            label="Add Delivery Agent"
-            onPress={() =>
-              router.push("/is_signed_in/Admin/AddDeliveryAgent")
-            }   
-          />
-          <ActionCard
-            icon="receipt-outline"
-            label="Pass Order Details"
-            onPress={() =>
-              router.push("/is_signed_in/Admin/DeliveryAssign")
-            }   
-          />
-        </View>
-        
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Popular Today</Text>
-
-          <FoodCard name="Veg Meals" price="₹60" />
-          <FoodCard name="Chicken Biriyani" price="₹120" />
-          <FoodCard name="Tea & Snacks" price="₹20" />
-        </View>
-      </ScrollView>
-
-      <View style={styles.navbar}>
-        <NavItem
-          icon="home"
-          label="Home"
-          active
-          onPress={() =>
-            router.push("/is_signed_in/Admin/HomeScreen")
-          }
-        />
-        <NavItem
-          icon="bicycle-outline"
-          label="Delivery"
-          onPress={() => router.push("/is_signed_in/Admin/AddDeliveryAgent")}
-        />
-        <NavItem
-          icon="receipt-outline"
-          label="Orders"
-          onPress={() =>
-            router.push("is_signed_in/Admin/DeliveryAssign")
-          }
-        />
-        <NavItem
-          icon="person-outline"
-          label="Profile"
-          onPress={() =>
-            router.push("/is_signed_in/Admin/ProfileScreen")
-          }
-        />
+        {/* LOGOUT ICON */}
+        <TouchableOpacity onPress={handleLogout} style={styles.logoutBtn}>
+          <Ionicons name="log-out-outline" size={26} color="#FF7A00" />
+        </TouchableOpacity>
       </View>
-    </SafeAreaView>
-  );
-}
 
-function ActionCard({ icon, label, onPress }) {
-  return (
-    <TouchableOpacity
-      style={styles.actionCard}
-      onPress={onPress}
-      activeOpacity={0.8}
-    >
-      <Ionicons name={icon} size={30} color={ORANGE} />
-      <Text style={styles.actionText}>{label}</Text>
-    </TouchableOpacity>
-  );
-}
-
-function FoodCard({ name, price }) {
-  return (
-    <View style={styles.foodCard}>
-      <Text style={styles.foodName}>{name}</Text>
-      <Text style={styles.foodPrice}>{price}</Text>
+      {/* ---------- GRID (2 COLUMNS) ---------- */}
+      <View style={styles.grid}>
+        {gridItems.map((item, index) => (
+          <TouchableOpacity
+            key={index}
+            style={styles.card}
+            activeOpacity={0.85}
+            onPress={item.onPress}
+          >
+            <Text style={styles.cardTitle}>{item.title}</Text>
+            <Text style={styles.cardSubtitle}>{item.subtitle}</Text>
+          </TouchableOpacity>
+        ))}
+      </View>
     </View>
   );
 }
 
-function NavItem({ icon, label, onPress, active, danger }) {
-  return (
-    <TouchableOpacity
-      style={styles.navItem}
-      onPress={onPress}
-      activeOpacity={0.7}
-    >
-      <Ionicons
-        name={icon}
-        size={24}
-        color={danger ? "#E53935" : active ? "orange" : "#888"}
-      />
-      <Text
-        style={[
-          styles.navText,
-          active && { color: "orange", fontWeight: "bold" },
-          danger && { color: "#E53935" },
-        ]}
-      >
-        {label}
-      </Text>
-    </TouchableOpacity>
-  );
-}
+/* ---------- STYLES ---------- */
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    backgroundColor: "#FFF6ED",
+    padding: 20,
+    marginTop:20,
+  },
+
+  /* HEADER */
+  header: {
+    marginBottom: 24,
+    justifyContent: "center",
+  },
+
+  appName: {
+    fontSize: 26,
+    fontWeight: "800",
+    color: "#FF7A00",
+  },
+
+  logoutBtn: {
+    position: "absolute",
+    right: 0,
+    padding: 6,
+  },
+
+  /* GRID */
+  grid: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    justifyContent: "space-between",
+  },
+
+  card: {
+    backgroundColor: "#FFFFFF",
+    width: "48%",
+    height: 140,
+    borderRadius: 18,
+    padding: 16,
+    marginBottom: 16,
+    justifyContent: "space-between",
+
+    shadowColor: "#000",
+    shadowOpacity: 0.08,
+    shadowRadius: 8,
+    elevation: 5,
+  },
+
+  centerWrapper: {
+    alignItems: "center",
+    marginTop: 10,
+  },
+
+  cardTitle: {
+    fontSize: 17,
+    fontWeight: "700",
+    color: "#FF7A00",
+  },
+
+  cardSubtitle: {
+    fontSize: 13,
+    color: "#666",
+  },
+});
