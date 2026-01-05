@@ -1,18 +1,12 @@
-import React, { useState, useEffect } from "react";
-import {
-  View,
-  Text,
-  StyleSheet,
-  TouchableOpacity,
-  ScrollView,
-} from "react-native";
-import { SafeAreaView } from "react-native-safe-area-context";
 import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
-import { auth, db } from "../../../firebaseConfig";
 import { doc, getDoc } from "firebase/firestore";
+import { useEffect, useState } from "react";
+import { ScrollView, Text, TouchableOpacity, View } from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
+import { auth, db } from "../../../firebaseConfig";
 
-import { HomeStyles as styles, ORANGE } from "@/assets/src/styles/HomeStyles";
+import { ORANGE, HomeStyles as styles } from "@/assets/src/styles/HomeStyles";
 
 export default function HomeScreen() {
   const router = useRouter();
@@ -52,47 +46,35 @@ export default function HomeScreen() {
           <ActionCard
             icon="restaurant-outline"
             label="View Menu"
-            onPress={() =>
-              router.push("/is_signed_in/student_staff/ShowMenu")
-            }
+            onPress={() => router.push("/is_signed_in/student_staff/ShowMenu")}
           />
           <ActionCard
             icon="receipt-outline"
             label="Order Food"
-            onPress={() =>
-              router.push("/is_signed_in/student_staff/OrderPage")
-            }   
+            onPress={() => router.push("/is_signed_in/student_staff/OrderPage")}
           />
         </View>
-        
+        {/* 
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>Popular Today</Text>
 
           <FoodCard name="Veg Meals" price="₹60" />
           <FoodCard name="Chicken Biriyani" price="₹120" />
           <FoodCard name="Tea & Snacks" price="₹20" />
-        </View>
+        </View> */}
       </ScrollView>
 
       <View style={styles.navbar}>
+        <NavItem icon="home" label="Home" active />
         <NavItem
-          icon="home"
-          label="Home"
-          active
-
-          
+          icon="sparkles-outline"
+          label="Special Food"
+          // onPress={() => router.push("/is_signed_in/student_staff/ShowMenu")}
         />
         <NavItem
-          icon="restaurant-outline"
-          label="View Menu"
-          onPress={() => router.push("/is_signed_in/student_staff/ShowMenu")}
-        />
-        <NavItem
-          icon="receipt-outline"
-          label="Orders"
-          onPress={() =>
-            router.push("/is_signed_in/student_staff/OrderPage")
-          }
+          icon="star-outline"
+          label="Weekly Subscription"
+        //   onPress={() => router.push("/is_signed_in/student_staff/OrderPage")}
         />
         <NavItem
           icon="person-outline"

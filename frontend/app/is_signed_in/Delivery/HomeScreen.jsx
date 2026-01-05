@@ -299,13 +299,7 @@ export default function HomeScreen() {
               router.push("/is_signed_in/Delivery/OrderHistory")
             }
           />
-          <Action
-            icon="person-outline"
-            label="My Profile"
-            onPress={() =>
-              router.push("/is_signed_in/Delivery/ProfileScreen")
-            }
-          />
+
         </View>
 
         {/* LOGOUT */}
@@ -344,7 +338,125 @@ function Action({ icon, label, onPress }) {
 
 
 
+// /* ================= STYLES ================= */
+// const styles = StyleSheet.create({
+//   container: {
+//     flex: 1,
+//     backgroundColor: "#F8F8F8",
+//     padding: 20,
+//   },
+
+//   loader: {
+//     flex: 1,
+//     justifyContent: "center",
+//     alignItems: "center",
+//   },
+
+//   header: {
+//     backgroundColor: "#FF7A00",
+//     paddingVertical: 18,
+//     borderRadius: 14,
+//     alignItems: "center",
+//   },
+
+//   headerTitle: {
+//     color: "#fff",
+//     fontSize: 18,
+//     fontWeight: "700",
+//     marginTop: 6,
+//   },
+
+//   infoBox: {
+//     marginTop: 20,
+//     alignItems: "center",
+//   },
+
+//   welcome: {
+//     fontSize: 14,
+//     color: "#777",
+//   },
+
+//   name: {
+//     fontSize: 20,
+//     fontWeight: "700",
+//     color: "#333",
+//     marginTop: 4,
+//   },
+
+//   username: {
+//     fontSize: 13,
+//     color: "#888",
+//     marginTop: 2,
+//   },
+
+//   statsBox: {
+//     backgroundColor: "#fff",
+//     marginTop: 25,
+//     borderRadius: 12,
+//     padding: 16,
+//   },
+
+//   statRow: {
+//     flexDirection: "row",
+//     justifyContent: "space-between",
+//     paddingVertical: 10,
+//     borderBottomWidth: 0.5,
+//     borderColor: "#eee",
+//   },
+
+//   statLabel: {
+//     fontSize: 15,
+//     color: "#555",
+//   },
+
+//   statValue: {
+//     fontSize: 16,
+//     fontWeight: "700",
+//     color: "#FF7A00",
+//   },
+
+//   actions: {
+//     marginTop: 30,
+//   },
+
+//   actionBtn: {
+//     backgroundColor: "#fff",
+//     flexDirection: "row",
+//     alignItems: "center",
+//     padding: 14,
+//     borderRadius: 12,
+//     marginBottom: 12,
+//   },
+
+//   actionText: {
+//     marginLeft: 14,
+//     fontSize: 15,
+//     fontWeight: "600",
+//     color: "#333",
+//   },
+
+//   logoutBtn: {
+//     backgroundColor: "#FF7A00",
+//     paddingVertical: 14,
+//     borderRadius: 14,
+//     flexDirection: "row",
+//     justifyContent: "center",
+//     alignItems: "center",
+//     marginTop: "auto",
+//   },
+
+//   logoutText: {
+//     color: "#fff",
+//     fontSize: 16,
+//     fontWeight: "700",
+//     marginLeft: 8,
+//   },
+// });
+
+
+
 /* ================= STYLES ================= */
+
 const styles = StyleSheet.create({
   container: {
     flex: 1,
@@ -352,14 +464,8 @@ const styles = StyleSheet.create({
     padding: 20,
   },
 
-  loader: {
-    flex: 1,
-    justifyContent: "center",
-    alignItems: "center",
-  },
-
   header: {
-    backgroundColor: "#FF7A00",
+    backgroundColor: "#FF9800",
     paddingVertical: 18,
     borderRadius: 14,
     alignItems: "center",
@@ -389,12 +495,6 @@ const styles = StyleSheet.create({
     marginTop: 4,
   },
 
-  username: {
-    fontSize: 13,
-    color: "#888",
-    marginTop: 2,
-  },
-
   statsBox: {
     backgroundColor: "#fff",
     marginTop: 25,
@@ -418,7 +518,7 @@ const styles = StyleSheet.create({
   statValue: {
     fontSize: 16,
     fontWeight: "700",
-    color: "#FF7A00",
+    color: "#FF9800",
   },
 
   actions: {
@@ -442,7 +542,7 @@ const styles = StyleSheet.create({
   },
 
   logoutBtn: {
-    backgroundColor: "#FF7A00",
+    backgroundColor: "#FF9800",
     paddingVertical: 14,
     borderRadius: 14,
     flexDirection: "row",
