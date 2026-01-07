@@ -15,6 +15,7 @@ import {
   doc,
   query,
   where,
+  increment,
 } from "firebase/firestore";
 import { useRouter } from "expo-router";
 import Toast from "react-native-toast-message";
@@ -88,7 +89,7 @@ export default function AdminOrderPage() {
         text2: `Assigned to ${agent.name}`,
         position: "top",
       });
-      const agentRef = doc(db, "delivery_agent", agentUid);
+      const agentRef = doc(db, "delivery_agents", agent.uid);
         await updateDoc(agentRef, {
           total_order: increment(1),
       });
