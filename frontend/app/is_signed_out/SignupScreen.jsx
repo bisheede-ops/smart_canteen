@@ -34,7 +34,7 @@ export default function SignupScreen() {
 
     let role = "";
     if (/^(L)?IDK\d{2}[A-Z]{2,3}\d{2,3}$/.test(username)) role = "student";
-    else if (/^KTU-F\d{3,5}$/.test(username)) role = "staff";
+    else if ( /^(?:O|T)\d{4,6}$/i.test(username) ||  /^KTU-F\d{3,5}$/i.test(username)) role = "staff";
     else {
       Toast.show({ type: 'error', text1: "Invalid username format", text2: "Only student or staff can sign up", position: 'top', visibilityTime: 3000 });
       return;
