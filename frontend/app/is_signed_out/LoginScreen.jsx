@@ -35,7 +35,7 @@ export default function LoginScreen() {
 
     if (/^(L)?IDK\d{2}[A-Z]{2,3}\d{2,3}$/.test(username)) {
       role = "Student";
-    } else if (/^KTU-F\d{3,5}$/.test(username)) {
+    } else if ( /^(?:O|T)\d{4,6}$/i.test(username) ||  /^KTU-F\d{3,5}$/i.test(username)) {
       role = "Staff";
     } else if (username === "ADMIN") {
       role = "Admin";
@@ -47,6 +47,7 @@ export default function LoginScreen() {
 
     try {
       // Delivery agents login
+      
       if (role === "Delivery") {
         // First login via Firebase Auth
         const userCredential = await signInWithEmailAndPassword(
@@ -82,8 +83,12 @@ export default function LoginScreen() {
           text1: `Login Successful`,
           text2: `Welcome ${agentData.name}`,
           visibilityTime: 1000,
+          
         });
-
+        console.log("Login successful");
+        console.log("Username:", username);
+        console.log("Role:", role);
+        console.log("UID:", user.uid);
         await delay(1000);
 
         router.replace({
@@ -111,7 +116,12 @@ export default function LoginScreen() {
         router.replace("/is_signed_in/student_staff/HomeScreen");
       else if (role === "Student")
         router.replace("/is_signed_in/student_staff/HomeScreen");
-    } catch (error) {
+      console.log("\nLogin successful");
+      console.log("Username:", username);
+      console.log("Role:", role);
+    }
+    
+    catch (error) {
       console.log("Login error:", error);
       let message = "Login failed";
       if (error.code === "auth/user-not-found") message = "Account not found";
