@@ -1,23 +1,24 @@
-import React, { useState, useEffect } from "react";
-import {
-  View,
-  Text,
-  TouchableOpacity,
-  FlatList,
-  StyleSheet,
-} from "react-native";
-import { SafeAreaView } from "react-native-safe-area-context";
+
 import { Ionicons } from "@expo/vector-icons";
+import { useRouter } from "expo-router";
 import {
   collection,
-  getDocs,
-  updateDoc,
   doc,
-  query,
-  where,
+  getDocs,
   increment,
+  query,
+  updateDoc,
+  where,
 } from "firebase/firestore";
-import { useRouter } from "expo-router";
+import { useEffect, useState } from "react";
+import {
+  FlatList,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
+} from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
 import Toast from "react-native-toast-message";
 import { db } from "../../../firebaseConfig";
 
@@ -26,7 +27,9 @@ const INACTIVE = "#888";
 
 export default function AdminOrderPage() {
   const router = useRouter();
-  const [orders, setOrders] = useState([]);
+
+  const [deliveryOrders, setDeliveryOrders] = useState([]);
+  const [nonDeliveryOrders, setNonDeliveryOrders] = useState([]);
   const [agents, setAgents] = useState([]);
 
   useEffect(() => {
@@ -35,32 +38,32 @@ export default function AdminOrderPage() {
 
   const fetchOrdersAndAgents = async () => {
     try {
-      /* 🔹 Fetch pending orders */
-      const ordersQuery = query(
-        collection(db, "food_ordered"),
-        where("toBeDelivered", "==", true)
-      );
+      /* 🔹 Fetch ALL orders */
+      const ordersSnap = await getDocs(query(collection(db, "food_ordered")));
 
-      const ordersSnap = await getDocs(ordersQuery);
-      const ordersList = ordersSnap.docs.map((d) => ({
+      const allOrders = ordersSnap.docs.map((d) => ({
         id: d.id,
         ...d.data(),
       }));
-      setOrders(ordersList);
+
+      setDeliveryOrders(allOrders.filter((o) => o.toBeDelivered === true));
+
+      setNonDeliveryOrders(allOrders.filter((o) => o.toBeDelivered === false));
 
       /* 🔹 Fetch ACTIVE delivery agents */
-      const agentsQuery = query(
-        collection(db, "delivery_agents"),
-        where("status", "==", "active")
+      const agentsSnap = await getDocs(
+        query(
+          collection(db, "delivery_agents"),
+          where("status", "==", "active")
+        )
       );
 
-      const agentsSnap = await getDocs(agentsQuery);
-      const agentsList = agentsSnap.docs.map((d) => ({
-        uid: d.id,
-        ...d.data(),
-      }));
-
-      setAgents(agentsList);
+      setAgents(
+        agentsSnap.docs.map((d) => ({
+          uid: d.id,
+          ...d.data(),
+        }))
+      );
     } catch (err) {
       console.error(err);
       Toast.show({
@@ -79,8 +82,13 @@ export default function AdminOrderPage() {
       await updateDoc(orderRef, {
         deliveryAgentId: agent.uid,
         deliveryAgentName: agent.name,
-        deliveryBy:agent.username,
-        delivered:false,
+        deliveryBy: agent.username,
+        delivered: false,
+
+      });
+
+      await updateDoc(doc(db, "delivery_agents", agent.uid), {
+        total_order: increment(1),
       });
 
       Toast.show({
@@ -89,26 +97,8 @@ export default function AdminOrderPage() {
         text2: `Assigned to ${agent.name}`,
         position: "top",
       });
-      const agentRef = doc(db, "delivery_agents", agent.uid);
-        await updateDoc(agentRef, {
-          total_order: increment(1),
-      });
-      
 
-
-      setOrders((prev) =>
-        prev.map((o) =>
-          o.id === orderId
-            ? {
-                ...o,
-                deliveryAgentId: agent.uid,
-                deliveryAgentName: agent.name,
-                deliveryBy:agent.username,
-                delivered:false,
-              }
-            : o
-        )
-      );
+      fetchOrdersAndAgents();
     } catch (err) {
       console.error(err);
       Toast.show({
@@ -128,14 +118,11 @@ export default function AdminOrderPage() {
         <Text style={styles.bold}>Food:</Text> {item.foodName} x {item.quantity}
       </Text>
       <Text style={styles.orderText}>
-        <Text style={styles.bold}>Price:</Text> ₹{item.price}
+        <Text style={styles.bold}>Place:</Text> {item.place || "Takeaway"}
       </Text>
 
-      {item.deliveryAgentId ? (
-        <Text style={styles.assigned}>
-          Assigned to: {item.deliveryAgentName}
-        </Text>
-      ) : (
+      {/* ASSIGN ONLY IF DELIVERY ORDER */}
+      {item.toBeDelivered && !item.deliveryAgentId && (
         <>
           <Text style={styles.assignTitle}>Assign Agent:</Text>
           <View style={styles.agentsRow}>
@@ -153,6 +140,12 @@ export default function AdminOrderPage() {
           </View>
         </>
       )}
+
+      {item.deliveryAgentId && (
+        <Text style={styles.assigned}>
+          Assigned to: {item.deliveryAgentName}
+        </Text>
+      )}
     </View>
   );
 
@@ -161,13 +154,32 @@ export default function AdminOrderPage() {
       <Text style={styles.title}>Food Orders</Text>
 
       <FlatList
-        data={orders}
+        data={deliveryOrders}
         renderItem={renderOrder}
         keyExtractor={(item) => item.id}
-        contentContainerStyle={{ paddingBottom: 90 }}
+        ListHeaderComponent={
+          <>
+            <Text style={styles.sectionTitle}> Delivery Orders</Text>
+            {deliveryOrders.length === 0 && (
+              <Text style={styles.emptyText}>No delivery orders</Text>
+            )}
+          </>
+        }
+        ListFooterComponent={
+          <>
+            <Text style={styles.sectionTitle}> Non-Delivery Orders</Text>
+            {nonDeliveryOrders.length === 0 && (
+              <Text style={styles.emptyText}>No non-delivery orders</Text>
+            )}
+            {nonDeliveryOrders.map((item) => (
+              <View key={item.id}>{renderOrder({ item })}</View>
+            ))}
+          </>
+        }
+        contentContainerStyle={{ paddingBottom: 120 }}
       />
 
-      {/* BOTTOM NAV */}
+      {/* 🔻 BOTTOM NAV */}
       <View style={styles.navbar}>
         <NavItem
           icon="home"
@@ -202,12 +214,23 @@ function NavItem({ icon, label, onPress, active }) {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: "#FFF7ED", paddingTop: 10 },
+  container: { flex: 1, backgroundColor: "#FFF7ED" },
   title: {
     fontSize: 22,
     fontWeight: "bold",
-    marginBottom: 15,
     paddingHorizontal: 20,
+    marginBottom: 10,
+  },
+  sectionTitle: {
+    fontSize: 18,
+    fontWeight: "bold",
+    marginHorizontal: 20,
+    marginTop: 15,
+  },
+  emptyText: {
+    marginHorizontal: 20,
+    color: "#888",
+    marginBottom: 10,
   },
   orderCard: {
     backgroundColor: "#fff",
