@@ -33,13 +33,12 @@ export default function HomeScreen() {
     }
 
     try {
-      // ✅ documentId === uid
       const agentRef = doc(db, "delivery_agents", user.uid);
       const snap = await getDoc(agentRef);
 
       if (snap.exists()) {
         setAgent({
-          uid: snap.id,     // 👈 use document ID as uid
+          uid: snap.id,
           ...snap.data(),
         });
       } else {
@@ -63,25 +62,21 @@ export default function HomeScreen() {
   return (
     <AuthGuard>
       <SafeAreaView style={styles.container}>
-        {/* HEADER */}
         <View style={styles.header}>
           <Text style={styles.headerTitle}>Delivery Dashboard</Text>
         </View>
 
-        {/* INFO */}
         <View style={styles.infoBox}>
           <Text style={styles.welcome}>Welcome,</Text>
           <Text style={styles.name}>{agent?.name ?? "Agent"}</Text>
           <Text style={styles.username}>{"status:"}{agent?.status ?? ""}</Text>
         </View>
 
-        {/* STATS */}
         <View style={styles.statsBox}>
           <Stat label="Total Orders" value={agent?.total_order ?? 0} />
           <Stat label="Completed Orders" value={agent?.completed_order ?? 0} />
         </View>
 
-        {/* ACTIONS */}
         <View style={styles.actions}>
           <Action
             icon="list-outline"
@@ -99,7 +94,6 @@ export default function HomeScreen() {
           />
         </View>
 
-        {/* LOGOUT */}
         <TouchableOpacity
           style={styles.logoutBtn}
           onPress={async () => {
@@ -115,7 +109,6 @@ export default function HomeScreen() {
   );
 }
 
-/* 🔹 Small Components */
 
 function Stat({ label, value }) {
   return (
