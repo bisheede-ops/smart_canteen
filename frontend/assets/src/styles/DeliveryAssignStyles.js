@@ -43,6 +43,17 @@ export const DeliveryAssignStyles = StyleSheet.create({
     marginRight: 8,
     marginBottom: 5,
   },
+  deassignButton: {
+    marginTop: 8,
+    backgroundColor: ORANGE,
+    paddingVertical: 6,
+    borderRadius: 6,
+    alignItems: "center",
+},
+  deassignText: {
+    color: "#fff",
+    fontWeight: "600",
+},
   agentText: { color: "#fff", fontWeight: "bold", fontSize: 12 },
   navbar: {
     flexDirection: "row",

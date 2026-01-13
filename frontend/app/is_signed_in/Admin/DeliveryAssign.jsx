@@ -25,10 +25,16 @@ import { DeliveryAssignStyles as styles } from "@/assets/src/styles/DeliveryAssi
 const ORANGE = "#FF7A00";
 const INACTIVE = "#888";
 
-/* 🔹 Date helpers */
 const parseOrderDate = (createdAt) => {
   if (!createdAt) return null;
-  return new Date(createdAt);
+  if (typeof createdAt === "object" && createdAt.seconds) {
+    return new Date(createdAt.seconds * 1000);
+  }
+  if (typeof createdAt === "string") {
+    const d = new Date(createdAt);
+    return isNaN(d) ? null : d;
+  }
+  return null;
 };
 
 const formatOrderDate = (createdAt) => {
@@ -61,12 +67,12 @@ export default function DeliveryAssign() {
       setLoading(true);
 
       const ordersSnap = await getDocs(collection(db, "food_ordered"));
-      const allOrders = ordersSnap.docs.map(d => ({
-        id: d.id,
-        ...d.data(),
-      }));
-
-      setOrders(allOrders);
+      setOrders(
+        ordersSnap.docs.map(docSnap => ({
+          id: docSnap.id,
+          ...docSnap.data(),
+        }))
+      );
 
       const agentsSnap = await getDocs(
         query(
@@ -76,9 +82,9 @@ export default function DeliveryAssign() {
       );
 
       setAgents(
-        agentsSnap.docs.map(d => ({
-          uid: d.id,
-          ...d.data(),
+        agentsSnap.docs.map(docSnap => ({
+          uid: docSnap.id,
+          ...docSnap.data(),
         }))
       );
     } catch (err) {
@@ -93,37 +99,24 @@ export default function DeliveryAssign() {
     }
   };
 
-  /* 🔹 Categorize + sort orders (latest first) */
   const listData = useMemo(() => {
-    const sortedOrders = [...orders].sort((a, b) => {
+    const sorted = [...orders].sort((a, b) => {
       const d1 = parseOrderDate(b.createdAt);
       const d2 = parseOrderDate(a.createdAt);
       return (d1?.getTime() || 0) - (d2?.getTime() || 0);
     });
 
-    const assign = sortedOrders.filter(
-      o => o.toBeDelivered && !o.deliveryAgentId
-    );
-    const delivery = sortedOrders.filter(
-      o => o.toBeDelivered && o.deliveryAgentId
-    );
-    const nonDelivery = sortedOrders.filter(o => !o.toBeDelivered);
+    const assign = sorted.filter(o => o.toBeDelivered && !o.deliveryAgentId);
+    const delivery = sorted.filter(o => o.toBeDelivered && o.deliveryAgentId);
+    const nonDelivery = sorted.filter(o => !o.toBeDelivered);
 
     return [
       { type: "header", title: "Assign Orders" },
-      ...(assign.length
-        ? assign.map(o => ({ ...o, type: "order" }))
-        : [{ type: "empty", text: "No assignable orders" }]),
-
+      ...(assign.length ? assign.map(o => ({ ...o, type: "order" })) : [{ type: "empty", text: "No assignable orders" }]),
       { type: "header", title: "Delivery Orders" },
-      ...(delivery.length
-        ? delivery.map(o => ({ ...o, type: "order" }))
-        : [{ type: "empty", text: "No delivery orders" }]),
-
+      ...(delivery.length ? delivery.map(o => ({ ...o, type: "order" })) : [{ type: "empty", text: "No delivery orders" }]),
       { type: "header", title: "Non-Delivery Orders" },
-      ...(nonDelivery.length
-        ? nonDelivery.map(o => ({ ...o, type: "order" }))
-        : [{ type: "empty", text: "No non-delivery orders" }]),
+      ...(nonDelivery.length ? nonDelivery.map(o => ({ ...o, type: "order" })) : [{ type: "empty", text: "No non-delivery orders" }]),
     ];
   }, [orders]);
 
@@ -132,7 +125,6 @@ export default function DeliveryAssign() {
       await updateDoc(doc(db, "food_ordered", orderId), {
         deliveryAgentId: agent.uid,
         deliveryAgentName: agent.name,
-        deliveryBy: agent.username,
         delivered: false,
       });
 
@@ -142,17 +134,38 @@ export default function DeliveryAssign() {
 
       Toast.show({
         type: "success",
-        text1: "Assigned ✅",
+        text1: "Assigned successfully",
         text2: `Assigned to ${agent.name}`,
       });
-
+      console.log("assigned successfully");
       fetchData();
     } catch (err) {
       console.error(err);
-      Toast.show({
-        type: "error",
-        text1: "Assignment Failed",
+      Toast.show({ type: "error", text1: "Assignment Failed" });
+    }
+  };
+
+  const deassignAgent = async (order) => {
+    try {
+      await updateDoc(doc(db, "food_ordered", order.id), {
+        deliveryAgentId: null,
+        deliveryAgentName: null,
       });
+
+      await updateDoc(doc(db, "delivery_agents", order.deliveryAgentId), {
+        total_order: increment(-1),
+      });
+
+      Toast.show({
+        type: "success",
+        text1: "Deassigned successfully",
+        text2: "Delivery agent removed",
+      });
+      console.log("deassigned successfully");
+      fetchData();
+    } catch (err) {
+      console.error(err);
+      Toast.show({ type: "error", text1: "Deassignment Failed" });
     }
   };
 
@@ -167,24 +180,11 @@ export default function DeliveryAssign() {
 
     return (
       <View style={styles.orderCard}>
-        <Text style={styles.orderText}>
-          <Text style={styles.bold}>User:</Text> {item.username}
-        </Text>
-
-        <Text style={styles.orderText}>
-          <Text style={styles.bold}>Food:</Text>{" "}
-          {item.foodName} x {item.quantity}
-        </Text>
-
-        <Text style={styles.orderText}>
-          <Text style={styles.bold}>Place:</Text>{" "}
-          {item.place || "Takeaway"}
-        </Text>
-
-        <Text style={styles.orderText}>
-          <Text style={styles.bold}>Ordered At:</Text>{" "}
-          {formatOrderDate(item.createdAt)}
-        </Text>
+        <Text style={styles.orderText}><Text style={styles.bold}>User:</Text> {item.username}</Text>
+        <Text style={styles.orderText}><Text style={styles.bold}>Food:</Text> {item.foodName} x {item.quantity}</Text>
+        <Text style={styles.orderText}><Text style={styles.bold}>Deliver to:</Text> {item.place || "Takeaway"}</Text>
+        <Text style={styles.orderText}><Text style={styles.bold}>Ordered At:</Text> {formatOrderDate(item.createdAt)}</Text>
+        <Text style={styles.orderText}><Text style={styles.bold}>Delivered:</Text> {item.delivered}</Text>
 
         {item.toBeDelivered && !item.deliveryAgentId && (
           <>
@@ -196,9 +196,7 @@ export default function DeliveryAssign() {
                   style={styles.agentButton}
                   onPress={() => assignAgent(item.id, agent)}
                 >
-                  <Text style={styles.agentText}>
-                    {agent.name} ({agent.username})
-                  </Text>
+                  <Text style={styles.agentText}>{agent.name}</Text>
                 </TouchableOpacity>
               ))}
             </View>
@@ -206,9 +204,18 @@ export default function DeliveryAssign() {
         )}
 
         {item.deliveryAgentId && (
-          <Text style={styles.assigned}>
-            Assigned to: {item.deliveryAgentName}
-          </Text>
+          <>
+            <Text style={styles.assigned}>
+              Assigned to: {item.deliveryAgentName}
+            </Text>
+
+            <TouchableOpacity
+              style={styles.deassignButton}
+              onPress={() => deassignAgent(item)}
+            >
+              <Text style={styles.deassignText}>Deassign Agent</Text>
+            </TouchableOpacity>
+          </>
         )}
       </View>
     );
@@ -220,57 +227,14 @@ export default function DeliveryAssign() {
 
       <FlatList
         data={listData}
-        keyExtractor={(item, index) =>
-          item.id ? item.id : `${item.type}-${index}`
-        }
+        keyExtractor={(item, index) => item.id ? item.id : `${item.type}-${index}`}
         renderItem={renderItem}
-        contentContainerStyle={{ paddingBottom: 120 }}
         refreshing={loading}
         onRefresh={fetchData}
+        contentContainerStyle={{ paddingBottom: 120 }}
       />
-
-      {/* 🔻 Bottom Navigation */}
-      <View style={styles.navbar}>
-        <NavItem
-          icon="home"
-          label="Home"
-          onPress={() =>
-            router.push("/is_signed_in/Admin/HomeScreen")
-          }
-        />
-        <NavItem
-          icon="bicycle-outline"
-          label="Delivery"
-          onPress={() =>
-            router.push("/is_signed_in/Admin/AddDeliveryAgent")
-          }
-        />
-        <NavItem icon="receipt-outline" label="Orders" active />
-        <NavItem
-          icon="person-outline"
-          label="Profile"
-          onPress={() =>
-            router.push("/is_signed_in/Admin/ProfileScreen")
-          }
-        />
-      </View>
 
       <Toast />
     </SafeAreaView>
-  );
-}
-
-function NavItem({ icon, label, onPress, active }) {
-  return (
-    <TouchableOpacity style={styles.navItem} onPress={onPress}>
-      <Ionicons
-        name={icon}
-        size={24}
-        color={active ? ORANGE : INACTIVE}
-      />
-      <Text style={[styles.navText, active && styles.active]}>
-        {label}
-      </Text>
-    </TouchableOpacity>
   );
 }
