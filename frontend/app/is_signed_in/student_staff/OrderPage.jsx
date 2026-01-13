@@ -84,7 +84,7 @@ export default function OrderPage() {
         place: toBeDelivered ? place : "", // ✅ SAFE
         toBeDelivered,
         deliveryBy: "",
-        time: serverTimestamp(),
+        createdAt: serverTimestamp(),
       });
 
       Toast.show({

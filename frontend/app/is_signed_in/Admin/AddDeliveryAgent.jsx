@@ -17,6 +17,12 @@ import Toast from "react-native-toast-message";
 import { auth, db } from "../../../firebaseConfig";
 import { SignupStyles as styles } from "@/assets/src/styles/SignupStyles";
 
+import {
+  validateName,
+  validatePassword,
+  validateUsername,
+} from "../../../utils/validation";
+
 export default function AddDeliveryAgent() {
   const router = useRouter();
 
@@ -27,30 +33,48 @@ export default function AddDeliveryAgent() {
 
   const [hidePassword, setHidePassword] = useState(true);
   const [hideConfirmPassword, setHideConfirmPassword] = useState(true);
+  const [loading, setLoading] = useState(false);
 
   const handleAddAgent = async () => {
+    if (loading) return;
+    setLoading(true);
+
     if (!name || !username || !password || !confirmPassword) {
-      Toast.show({
-        type: "error",
-        text1: "Please fill all fields",
-        position: "top",
-      });
+      Toast.show({ type: "error", text1: "Please fill all fields" });
+      setLoading(false);
+      return;
+    }
+
+    const nameError = validateName(name);
+    if (nameError) {
+      Toast.show({ type: "error", text1: nameError });
+      setLoading(false);
+      return;
+    }
+
+    const usernameError = validateUsername(username);
+    if (usernameError) {
+      Toast.show({ type: "error", text1: nameError });
+      setLoading(false);
+      return;
+    }
+
+    const passwordError = validatePassword(password);
+    if (passwordError) {
+      Toast.show({ type: "error", text1: passwordError });
+      setLoading(false);
       return;
     }
 
     if (password !== confirmPassword) {
-      Toast.show({
-        type: "error",
-        text1: "Passwords do not match",
-        position: "top",
-      });
+      Toast.show({ type: "error", text1: "Passwords do not match" });
+      setLoading(false);
       return;
     }
 
     const email = `${username}@smartcanteen.com`;
 
     try {
-      // 🔐 Create auth user
       const userCredential = await createUserWithEmailAndPassword(
         auth,
         email,
@@ -59,14 +83,21 @@ export default function AddDeliveryAgent() {
 
       const user = userCredential.user;
 
-      // 📦 Store delivery agent data
-      await setDoc(doc(db, "delivery_agents", user.uid), {
-        total_order:"",
-        completed_order:"",
+      await setDoc(doc(db, "users", user.uid), {
         name,
-        username,
+        phone: username,
+        email,
+        role: "delivery_agent",
+        createdAt: serverTimestamp(),
+      });
+
+      await setDoc(doc(db, "delivery_agents", user.uid), {
+        name,
+        phone: username,
         email,
         status: "active",
+        total_orders: 0,
+        completed_orders: 0,
         createdAt: serverTimestamp(),
       });
 
@@ -74,9 +105,8 @@ export default function AddDeliveryAgent() {
         type: "success",
         text1: "Delivery Agent Added",
         text2: username,
-        position: "top",
       });
-
+      console.log("delivery agent added");
       setName("");
       setUsername("");
       setPassword("");
@@ -84,15 +114,15 @@ export default function AddDeliveryAgent() {
 
       setTimeout(() => {
         router.back();
-      }, 2000);
+      }, 500);
     } catch (error) {
-      console.error(error);
       Toast.show({
         type: "error",
         text1: "Failed to add agent",
         text2: error.message,
-        position: "top",
       });
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -100,16 +130,12 @@ export default function AddDeliveryAgent() {
     <View style={styles.container}>
       <StatusBar barStyle="light-content" />
 
-      {/* HEADER */}
       <View style={styles.header}>
         <Text style={styles.title}>Add Delivery Agent</Text>
-        <Text style={styles.subtitle}>
-          Create account for delivery agent
-        </Text>
+        <Text style={styles.subtitle}>Create agent account</Text>
       </View>
 
       <ScrollView style={styles.form} showsVerticalScrollIndicator={false}>
-        {/* NAME */}
         <View style={styles.inputContainer}>
           <Ionicons name="person-outline" size={20} color="grey" />
           <TextInput
@@ -120,19 +146,20 @@ export default function AddDeliveryAgent() {
           />
         </View>
 
-        {/* USERNAME */}
         <View style={styles.inputContainer}>
-          <Ionicons name="person-outline" size={20} color="grey" />
+          <Ionicons name="call-outline" size={20} color="grey" />
           <TextInput
-            placeholder="Agent Username"
+            placeholder="Phone Number (10 digits)"
             style={styles.input}
             value={username}
-            onChangeText={(text) => setUsername(text.toUpperCase())}
-            autoCapitalize="characters"
+            onChangeText={(text) =>
+              setUsername(text.replace(/\D/g, ""))
+            }
+            keyboardType="number-pad"
+            maxLength={10}
           />
         </View>
 
-        {/* PASSWORD */}
         <View style={styles.inputContainer}>
           <Ionicons name="lock-closed-outline" size={20} color="grey" />
           <TextInput
@@ -151,7 +178,6 @@ export default function AddDeliveryAgent() {
           </TouchableOpacity>
         </View>
 
-        {/* CONFIRM PASSWORD */}
         <View style={styles.inputContainer}>
           <Ionicons name="shield-checkmark-outline" size={20} color="grey" />
           <TextInput
@@ -176,16 +202,17 @@ export default function AddDeliveryAgent() {
           <Text style={styles.error}>Passwords do not match</Text>
         )}
 
-        {/* BUTTON */}
         <TouchableOpacity
           style={[
             styles.button,
             confirmPassword !== password && { opacity: 0.6 },
           ]}
-          disabled={confirmPassword !== password}
+          disabled={confirmPassword !== password || loading}
           onPress={handleAddAgent}
         >
-          <Text style={styles.buttonText}>Add Agent</Text>
+          <Text style={styles.buttonText}>
+            {loading ? "Adding..." : "Add Agent"}
+          </Text>
         </TouchableOpacity>
       </ScrollView>
 

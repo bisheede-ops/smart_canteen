@@ -37,7 +37,7 @@ export default function LoginScreen() {
     setLoading(true);
     console.log("log in clicked");
 
-    /* ---------- VALIDATION ---------- */
+
     const usernameError = validateUsername(username);
     if (usernameError) {
       Toast.show({ type: "error", text1: usernameError });
@@ -55,7 +55,6 @@ export default function LoginScreen() {
     const email = `${username}@smartcanteen.com`;
 
     try {
-      /* ---------- AUTH ---------- */
       const userCredential = await signInWithEmailAndPassword(
         auth,
         email,
@@ -63,8 +62,6 @@ export default function LoginScreen() {
       );
 
       const uid = userCredential.user.uid;
-
-      /* ---------- READ ROLE ---------- */
       const userRef = doc(db, "users", uid);
       const userSnap = await getDoc(userRef);
 
@@ -83,8 +80,7 @@ export default function LoginScreen() {
         text1: "Login Successful",
       });
       setTimeout(() => {
-        
-        /* ---------- ROLE ROUTING ---------- */
+        console.log("Logged in");
         if (role === "admin") {
           router.replace("/is_signed_in/Admin/HomeScreen");
         } else if (role === "delivery_agent") {
@@ -117,6 +113,7 @@ export default function LoginScreen() {
         text1: "Login Error",
         text2: message,
       });
+      setLoading(false);
     } 
   };
 

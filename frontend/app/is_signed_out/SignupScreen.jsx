@@ -18,12 +18,18 @@ import Toast from "react-native-toast-message";
 
 import { SignupStyles as styles } from "@/assets/src/styles/SignupStyles";
 
+import {
+  validateUsername,
+  validatePassword,
+  validateName,
+} from "../../utils/validation";
+
 export default function SignupScreen() {
   const router = useRouter();
 
   const [name, setName] = useState("");
-  const [username, setUsername] = useState(""); // phone number
-  const [role, setRole] = useState("student"); // 👈 NEW
+  const [username, setUsername] = useState(""); 
+  const [role, setRole] = useState("student");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [hidePassword, setHidePassword] = useState(true);
@@ -34,7 +40,6 @@ export default function SignupScreen() {
     if (loading) return;
     setLoading(true);
     console.log("Sign up clicked");
-    // basic empty checks
     if (!name || !username || !password || !confirmPassword) {
       Toast.show({
         type: "error",
@@ -45,14 +50,23 @@ export default function SignupScreen() {
       return;
     }
 
-    // phone number validation (10 digits only)
-    if (!/^\d{10}$/.test(username)) {
-      Toast.show({
-        type: "error",
-        text1: "Invalid phone number",
-        text2: "Username must be a 10-digit number",
-        position: "top",
-      });
+    const nameError = validateName(name);
+    if (nameError) {
+      Toast.show({ type: "error", text1: nameError });
+      setLoading(false);
+      return;
+    }
+
+    const usernameError = validateUsername(username);
+    if (usernameError) {
+      Toast.show({ type: "error", text1: usernameError });
+      setLoading(false);
+      return;
+    }
+
+    const passwordError = validatePassword(password);
+    if (passwordError) {
+      Toast.show({ type: "error", text1: passwordError });
       setLoading(false);
       return;
     }
@@ -67,7 +81,6 @@ export default function SignupScreen() {
       return;
     }
 
-    // phone → email
     const email = `${username}@smartcanteen.com`;
 
     try {
@@ -78,13 +91,11 @@ export default function SignupScreen() {
       );
 
       const user = userCredential.user;
-
-      // store user profile in Firestore
       await setDoc(doc(db, "users", user.uid), {
         name,
         phone: username,
         email,
-        role, // 👈 stored from dropdown
+        role,
         createdAt: serverTimestamp(),
       });
 
@@ -97,7 +108,8 @@ export default function SignupScreen() {
 
       setTimeout(() => {
         router.push("/is_signed_out/LoginScreen");
-      }, 2000);
+           console.log("Signed up");
+      }, 1000);
     } catch (error) {
       Toast.show({
         type: "error",
@@ -105,6 +117,7 @@ export default function SignupScreen() {
         text2: error.message,
         position: "top",
       });
+      setLoading(false);
     }
   };
 
@@ -118,7 +131,6 @@ export default function SignupScreen() {
       </View>
 
       <ScrollView style={styles.form} showsVerticalScrollIndicator={false}>
-        {/* Name */}
         <View style={styles.inputContainer}>
           <Ionicons name="person-outline" size={20} color="grey" />
           <TextInput
@@ -129,7 +141,6 @@ export default function SignupScreen() {
           />
         </View>
 
-        {/* Phone Number (Username) */}
         <View style={styles.inputContainer}>
           <Ionicons name="call-outline" size={20} color="grey" />
           <TextInput
@@ -137,14 +148,13 @@ export default function SignupScreen() {
             style={styles.input}
             value={username}
             onChangeText={(text) =>
-              setUsername(text.replace(/\D/g, "")) // only numbers
+              setUsername(text.replace(/\D/g, ""))
             }
             keyboardType="number-pad"
             maxLength={10}
           />
         </View>
 
-        {/* Role Dropdown */}
         <View style={styles.inputContainer}>
           <Ionicons name="people-outline" size={20} color="grey" />
           <Picker
@@ -158,7 +168,6 @@ export default function SignupScreen() {
           </Picker>
         </View>
 
-        {/* Password */}
         <View style={styles.inputContainer}>
           <Ionicons name="lock-closed-outline" size={20} color="grey" />
           <TextInput
@@ -177,7 +186,6 @@ export default function SignupScreen() {
           </TouchableOpacity>
         </View>
 
-        {/* Confirm Password */}
         <View style={styles.inputContainer}>
           <Ionicons name="shield-checkmark-outline" size={20} color="grey" />
           <TextInput

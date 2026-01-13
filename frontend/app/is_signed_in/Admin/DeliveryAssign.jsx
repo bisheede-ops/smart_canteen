@@ -1,4 +1,3 @@
-
 import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
 import {
@@ -10,10 +9,9 @@ import {
   updateDoc,
   where,
 } from "firebase/firestore";
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import {
   FlatList,
-  StyleSheet,
   Text,
   TouchableOpacity,
   View,
@@ -22,35 +20,54 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import Toast from "react-native-toast-message";
 import { db } from "../../../firebaseConfig";
 
+import { DeliveryAssignStyles as styles } from "@/assets/src/styles/DeliveryAssignStyles";
+
 const ORANGE = "#FF7A00";
 const INACTIVE = "#888";
 
-export default function AdminOrderPage() {
+/* 🔹 Date helpers */
+const parseOrderDate = (createdAt) => {
+  if (!createdAt) return null;
+  return new Date(createdAt);
+};
+
+const formatOrderDate = (createdAt) => {
+  const date = parseOrderDate(createdAt);
+  if (!date) return "Unknown time";
+
+  return date.toLocaleString("en-IN", {
+    day: "2-digit",
+    month: "short",
+    year: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
+    hour12: true,
+  });
+};
+
+export default function DeliveryAssign() {
   const router = useRouter();
 
-  const [deliveryOrders, setDeliveryOrders] = useState([]);
-  const [nonDeliveryOrders, setNonDeliveryOrders] = useState([]);
+  const [orders, setOrders] = useState([]);
   const [agents, setAgents] = useState([]);
+  const [loading, setLoading] = useState(false);
 
   useEffect(() => {
-    fetchOrdersAndAgents();
+    fetchData();
   }, []);
 
-  const fetchOrdersAndAgents = async () => {
+  const fetchData = async () => {
     try {
-      /* 🔹 Fetch ALL orders */
-      const ordersSnap = await getDocs(query(collection(db, "food_ordered")));
+      setLoading(true);
 
-      const allOrders = ordersSnap.docs.map((d) => ({
+      const ordersSnap = await getDocs(collection(db, "food_ordered"));
+      const allOrders = ordersSnap.docs.map(d => ({
         id: d.id,
         ...d.data(),
       }));
 
-      setDeliveryOrders(allOrders.filter((o) => o.toBeDelivered === true));
+      setOrders(allOrders);
 
-      setNonDeliveryOrders(allOrders.filter((o) => o.toBeDelivered === false));
-
-      /* 🔹 Fetch ACTIVE delivery agents */
       const agentsSnap = await getDocs(
         query(
           collection(db, "delivery_agents"),
@@ -59,7 +76,7 @@ export default function AdminOrderPage() {
       );
 
       setAgents(
-        agentsSnap.docs.map((d) => ({
+        agentsSnap.docs.map(d => ({
           uid: d.id,
           ...d.data(),
         }))
@@ -70,21 +87,53 @@ export default function AdminOrderPage() {
         type: "error",
         text1: "Fetch Failed",
         text2: "Unable to fetch orders or agents",
-        position: "top",
       });
+    } finally {
+      setLoading(false);
     }
   };
 
+  /* 🔹 Categorize + sort orders (latest first) */
+  const listData = useMemo(() => {
+    const sortedOrders = [...orders].sort((a, b) => {
+      const d1 = parseOrderDate(b.createdAt);
+      const d2 = parseOrderDate(a.createdAt);
+      return (d1?.getTime() || 0) - (d2?.getTime() || 0);
+    });
+
+    const assign = sortedOrders.filter(
+      o => o.toBeDelivered && !o.deliveryAgentId
+    );
+    const delivery = sortedOrders.filter(
+      o => o.toBeDelivered && o.deliveryAgentId
+    );
+    const nonDelivery = sortedOrders.filter(o => !o.toBeDelivered);
+
+    return [
+      { type: "header", title: "Assign Orders" },
+      ...(assign.length
+        ? assign.map(o => ({ ...o, type: "order" }))
+        : [{ type: "empty", text: "No assignable orders" }]),
+
+      { type: "header", title: "Delivery Orders" },
+      ...(delivery.length
+        ? delivery.map(o => ({ ...o, type: "order" }))
+        : [{ type: "empty", text: "No delivery orders" }]),
+
+      { type: "header", title: "Non-Delivery Orders" },
+      ...(nonDelivery.length
+        ? nonDelivery.map(o => ({ ...o, type: "order" }))
+        : [{ type: "empty", text: "No non-delivery orders" }]),
+    ];
+  }, [orders]);
+
   const assignAgent = async (orderId, agent) => {
     try {
-      const orderRef = doc(db, "food_ordered", orderId);
-
-      await updateDoc(orderRef, {
+      await updateDoc(doc(db, "food_ordered", orderId), {
         deliveryAgentId: agent.uid,
         deliveryAgentName: agent.name,
         deliveryBy: agent.username,
         delivered: false,
-
       });
 
       await updateDoc(doc(db, "delivery_agents", agent.uid), {
@@ -95,107 +144,114 @@ export default function AdminOrderPage() {
         type: "success",
         text1: "Assigned ✅",
         text2: `Assigned to ${agent.name}`,
-        position: "top",
       });
 
-      fetchOrdersAndAgents();
+      fetchData();
     } catch (err) {
       console.error(err);
       Toast.show({
         type: "error",
         text1: "Assignment Failed",
-        position: "top",
       });
     }
   };
 
-  const renderOrder = ({ item }) => (
-    <View style={styles.orderCard}>
-      <Text style={styles.orderText}>
-        <Text style={styles.bold}>User:</Text> {item.username}
-      </Text>
-      <Text style={styles.orderText}>
-        <Text style={styles.bold}>Food:</Text> {item.foodName} x {item.quantity}
-      </Text>
-      <Text style={styles.orderText}>
-        <Text style={styles.bold}>Place:</Text> {item.place || "Takeaway"}
-      </Text>
+  const renderItem = ({ item }) => {
+    if (item.type === "header") {
+      return <Text style={styles.sectionTitle}>{item.title}</Text>;
+    }
 
-      {/* ASSIGN ONLY IF DELIVERY ORDER */}
-      {item.toBeDelivered && !item.deliveryAgentId && (
-        <>
-          <Text style={styles.assignTitle}>Assign Agent:</Text>
-          <View style={styles.agentsRow}>
-            {agents.map((agent) => (
-              <TouchableOpacity
-                key={agent.uid}
-                style={styles.agentButton}
-                onPress={() => assignAgent(item.id, agent)}
-              >
-                <Text style={styles.agentText}>
-                  {agent.name} ({agent.username})
-                </Text>
-              </TouchableOpacity>
-            ))}
-          </View>
-        </>
-      )}
+    if (item.type === "empty") {
+      return <Text style={styles.emptyText}>{item.text}</Text>;
+    }
 
-      {item.deliveryAgentId && (
-        <Text style={styles.assigned}>
-          Assigned to: {item.deliveryAgentName}
+    return (
+      <View style={styles.orderCard}>
+        <Text style={styles.orderText}>
+          <Text style={styles.bold}>User:</Text> {item.username}
         </Text>
-      )}
-    </View>
-  );
+
+        <Text style={styles.orderText}>
+          <Text style={styles.bold}>Food:</Text>{" "}
+          {item.foodName} x {item.quantity}
+        </Text>
+
+        <Text style={styles.orderText}>
+          <Text style={styles.bold}>Place:</Text>{" "}
+          {item.place || "Takeaway"}
+        </Text>
+
+        <Text style={styles.orderText}>
+          <Text style={styles.bold}>Ordered At:</Text>{" "}
+          {formatOrderDate(item.createdAt)}
+        </Text>
+
+        {item.toBeDelivered && !item.deliveryAgentId && (
+          <>
+            <Text style={styles.assignTitle}>Assign Agent:</Text>
+            <View style={styles.agentsRow}>
+              {agents.map(agent => (
+                <TouchableOpacity
+                  key={agent.uid}
+                  style={styles.agentButton}
+                  onPress={() => assignAgent(item.id, agent)}
+                >
+                  <Text style={styles.agentText}>
+                    {agent.name} ({agent.username})
+                  </Text>
+                </TouchableOpacity>
+              ))}
+            </View>
+          </>
+        )}
+
+        {item.deliveryAgentId && (
+          <Text style={styles.assigned}>
+            Assigned to: {item.deliveryAgentName}
+          </Text>
+        )}
+      </View>
+    );
+  };
 
   return (
     <SafeAreaView style={styles.container}>
       <Text style={styles.title}>Food Orders</Text>
 
       <FlatList
-        data={deliveryOrders}
-        renderItem={renderOrder}
-        keyExtractor={(item) => item.id}
-        ListHeaderComponent={
-          <>
-            <Text style={styles.sectionTitle}> Delivery Orders</Text>
-            {deliveryOrders.length === 0 && (
-              <Text style={styles.emptyText}>No delivery orders</Text>
-            )}
-          </>
+        data={listData}
+        keyExtractor={(item, index) =>
+          item.id ? item.id : `${item.type}-${index}`
         }
-        ListFooterComponent={
-          <>
-            <Text style={styles.sectionTitle}> Non-Delivery Orders</Text>
-            {nonDeliveryOrders.length === 0 && (
-              <Text style={styles.emptyText}>No non-delivery orders</Text>
-            )}
-            {nonDeliveryOrders.map((item) => (
-              <View key={item.id}>{renderOrder({ item })}</View>
-            ))}
-          </>
-        }
+        renderItem={renderItem}
         contentContainerStyle={{ paddingBottom: 120 }}
+        refreshing={loading}
+        onRefresh={fetchData}
       />
 
-      {/* 🔻 BOTTOM NAV */}
+      {/* 🔻 Bottom Navigation */}
       <View style={styles.navbar}>
         <NavItem
           icon="home"
           label="Home"
-          onPress={() => router.push("/is_signed_in/Admin/HomeScreen")}
+          onPress={() =>
+            router.push("/is_signed_in/Admin/HomeScreen")
+          }
         />
         <NavItem
           icon="bicycle-outline"
           label="Delivery"
-          onPress={() => router.push("/is_signed_in/Admin/AddDeliveryAgent")}
+          onPress={() =>
+            router.push("/is_signed_in/Admin/AddDeliveryAgent")
+          }
         />
         <NavItem icon="receipt-outline" label="Orders" active />
         <NavItem
           icon="person-outline"
           label="Profile"
-          onPress={() => router.push("/is_signed_in/Admin/ProfileScreen")}
+          onPress={() =>
+            router.push("/is_signed_in/Admin/ProfileScreen")
+          }
         />
       </View>
 
@@ -207,67 +263,14 @@ export default function AdminOrderPage() {
 function NavItem({ icon, label, onPress, active }) {
   return (
     <TouchableOpacity style={styles.navItem} onPress={onPress}>
-      <Ionicons name={icon} size={24} color={active ? ORANGE : INACTIVE} />
-      <Text style={[styles.navText, active && styles.active]}>{label}</Text>
+      <Ionicons
+        name={icon}
+        size={24}
+        color={active ? ORANGE : INACTIVE}
+      />
+      <Text style={[styles.navText, active && styles.active]}>
+        {label}
+      </Text>
     </TouchableOpacity>
   );
 }
-
-const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: "#FFF7ED" },
-  title: {
-    fontSize: 22,
-    fontWeight: "bold",
-    paddingHorizontal: 20,
-    marginBottom: 10,
-  },
-  sectionTitle: {
-    fontSize: 18,
-    fontWeight: "bold",
-    marginHorizontal: 20,
-    marginTop: 15,
-  },
-  emptyText: {
-    marginHorizontal: 20,
-    color: "#888",
-    marginBottom: 10,
-  },
-  orderCard: {
-    backgroundColor: "#fff",
-    padding: 15,
-    borderRadius: 10,
-    marginBottom: 12,
-    borderWidth: 1,
-    borderColor: "#ddd",
-    marginHorizontal: 20,
-  },
-  orderText: { fontSize: 14, marginBottom: 4 },
-  bold: { fontWeight: "bold" },
-  assigned: { fontWeight: "bold", marginTop: 5, color: "green" },
-  assignTitle: { marginTop: 5, fontWeight: "bold" },
-  agentsRow: { flexDirection: "row", flexWrap: "wrap", marginTop: 5 },
-  agentButton: {
-    backgroundColor: ORANGE,
-    paddingVertical: 6,
-    paddingHorizontal: 10,
-    borderRadius: 8,
-    marginRight: 8,
-    marginBottom: 5,
-  },
-  agentText: { color: "#fff", fontWeight: "bold", fontSize: 12 },
-  navbar: {
-    flexDirection: "row",
-    justifyContent: "space-around",
-    alignItems: "center",
-    height: 65,
-    backgroundColor: "#fff",
-    borderTopWidth: 1,
-    borderTopColor: "#FFE0B2",
-    position: "absolute",
-    bottom: 0,
-    width: "100%",
-  },
-  navItem: { alignItems: "center" },
-  navText: { fontSize: 11, color: "#888", marginTop: 2 },
-  active: { color: ORANGE, fontWeight: "bold" },
-});
