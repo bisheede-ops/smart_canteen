@@ -1,0 +1,106 @@
+import { StyleSheet } from "react-native";
+
+export const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    backgroundColor: "#f9f9f9",
+    padding: 20,
+    marginTop: 20,
+  },
+  headerContainer: {
+    paddingBottom: 10,
+  },
+  header: {
+    fontSize: 24,
+    fontWeight: "bold",
+    color: "#ff7a00",
+    textAlign: "center",
+    marginBottom: 10,
+  },
+  addBtn: {
+    flexDirection: "row",
+    backgroundColor: "#ff7a00",
+    padding: 12,
+    borderRadius: 10,
+    justifyContent: "center",
+  },
+  addText: {
+    color: "#fff",
+    marginLeft: 5,
+    fontWeight: "600",
+  },
+  card: {
+    backgroundColor: "#fff",
+    borderRadius: 12,
+    padding: 15,
+    marginVertical: 8,
+    flexDirection: "row",
+    justifyContent: "space-between",
+  },
+  name: { fontSize: 18, fontWeight: "bold" },
+  price: { color: "#ff7a00" },
+  category: { fontSize: 14 },
+  time: { fontSize: 13, color: "#555" },
+  actions: { justifyContent: "space-between" },
+  emptyText: {
+    textAlign: "center",
+    marginTop: 40,
+    color: "#999",
+  },
+  overlay: {
+    flex: 1,
+    backgroundColor: "rgba(0,0,0,0.5)",
+    justifyContent: "center",
+  },
+  modal: {
+    backgroundColor: "#fff",
+    margin: 20,
+    padding: 20,
+    borderRadius: 15,
+  },
+  modalTitle: {
+    fontSize: 20,
+    fontWeight: "bold",
+    textAlign: "center",
+    marginBottom: 10,
+  },
+  input: {
+    borderWidth: 1,
+    borderColor: "#ddd",
+    borderRadius: 10,
+    padding: 12,
+    marginBottom: 10,
+  },
+  label: { fontWeight: "600", marginBottom: 5 },
+  categoryRow: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    marginBottom: 10,
+  },
+  categoryBtn: {
+    padding: 8,
+    borderWidth: 1,
+    borderRadius: 8,
+    width: "30%",
+    alignItems: "center",
+  },
+  activeCategory: {
+    backgroundColor: "#ff7a00",
+    borderColor: "#ff7a00",
+  },
+  categoryText: { color: "#333" },
+  activeText: { color: "#fff", fontWeight: "600" },
+  timeBtn: {
+    borderWidth: 1,
+    borderColor: "#ddd",
+    borderRadius: 10,
+    padding: 12,
+    marginBottom: 10,
+  },
+  modalActions: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+  },
+  cancel: { color: "red", fontWeight: "600" },
+  save: { color: "#4caf50", fontWeight: "600" },
+});

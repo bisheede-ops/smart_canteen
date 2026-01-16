@@ -169,7 +169,7 @@ export default function LoginScreen() {
 
         <View style={styles.footer}>
           <Text style={styles.footerText}>Don’t have an account?</Text>
-          <Link href="/is_signed_out/SignupScreen">
+          <Link href="/is_signed_out/TimePicker">
             <Text style={styles.signup}> Sign Up</Text>
           </Link>
         </View>

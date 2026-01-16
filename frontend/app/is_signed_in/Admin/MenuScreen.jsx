@@ -1,4 +1,3 @@
-import { Ionicons } from "@expo/vector-icons";
 import React, { useEffect, useState } from "react";
 import {
   Alert,
@@ -9,8 +8,10 @@ import {
   TextInput,
   TouchableOpacity,
   View,
+  Platform,
 } from "react-native";
-
+import { Ionicons } from "@expo/vector-icons";
+import DateTimePicker from "@react-native-community/datetimepicker";
 import {
   addDoc,
   collection,
@@ -22,6 +23,8 @@ import {
 } from "firebase/firestore";
 import { db } from "../../../firebaseConfig";
 
+import { styles } from "@/assets/src/styles/MenuScreenStyles";
+
 export default function AdminMenu() {
   const [menu, setMenu] = useState([]);
   const [modalVisible, setModalVisible] = useState(false);
@@ -30,9 +33,15 @@ export default function AdminMenu() {
   const [name, setName] = useState("");
   const [price, setPrice] = useState("");
   const [category, setCategory] = useState("Snack");
-  const [time, setTime] = useState("");
 
-  /* ---------- FETCH MENU ---------- */
+  const [startTime, setStartTime] = useState(null);
+  const [endTime, setEndTime] = useState(null);
+  const [showStartPicker, setShowStartPicker] = useState(false);
+  const [showEndPicker, setShowEndPicker] = useState(false);
+
+  const formatTime = (date) =>
+    date.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
+
   const fetchMenu = async () => {
     const snapshot = await getDocs(collection(db, "menu"));
     const list = snapshot.docs.map((doc) => ({
@@ -46,15 +55,17 @@ export default function AdminMenu() {
     fetchMenu();
   }, []);
 
-  /* ---------- SAVE ---------- */
   const handleSave = async () => {
     if (!name || !price) {
       Alert.alert("Error", "Fill all fields");
       return;
     }
 
-    if ((category === "Breakfast" || category === "Lunch") && !time) {
-      Alert.alert("Error", "Please enter serving time");
+    if (
+      (category === "Breakfast" || category === "Lunch") &&
+      (!startTime || !endTime)
+    ) {
+      Alert.alert("Error", "Please select serving time");
       return;
     }
 
@@ -62,7 +73,10 @@ export default function AdminMenu() {
       name,
       price: Number(price),
       category,
-      time: category === "Snack" ? "" : time,
+      time:
+        category === "Snack"
+          ? ""
+          : `${formatTime(startTime)} - ${formatTime(endTime)}`,
       createdAt: serverTimestamp(),
     };
 
@@ -74,12 +88,11 @@ export default function AdminMenu() {
       }
       closeModal();
       fetchMenu();
-    } catch (err) {
+    } catch {
       Alert.alert("Error", "Operation failed");
     }
   };
 
-  /* ---------- DELETE ---------- */
   const handleDelete = (id) => {
     Alert.alert("Confirm", "Delete this item?", [
       { text: "Cancel" },
@@ -94,13 +107,13 @@ export default function AdminMenu() {
     ]);
   };
 
-  /* ---------- MODAL ---------- */
   const openAdd = () => {
     setEditingItem(null);
     setName("");
     setPrice("");
     setCategory("Snack");
-    setTime("");
+    setStartTime(null);
+    setEndTime(null);
     setModalVisible(true);
   };
 
@@ -109,13 +122,21 @@ export default function AdminMenu() {
     setName(item.name);
     setPrice(item.price.toString());
     setCategory(item.category);
-    setTime(item.time || "");
+
+    if (item.time) {
+      const [start, end] = item.time.split(" - ");
+      setStartTime(new Date(`1970-01-01 ${start}`));
+      setEndTime(new Date(`1970-01-01 ${end}`));
+    } else {
+      setStartTime(null);
+      setEndTime(null);
+    }
+
     setModalVisible(true);
   };
 
   const closeModal = () => setModalVisible(false);
 
-  /* ---------- ITEM UI ---------- */
   const renderItem = ({ item }) => (
     <View style={styles.card}>
       <View>
@@ -138,7 +159,6 @@ export default function AdminMenu() {
 
   return (
     <View style={styles.container}>
-      {/* ---------- FIXED HEADER ---------- */}
       <View style={styles.headerContainer}>
         <Text style={styles.header}>Admin Menu</Text>
 
@@ -148,19 +168,16 @@ export default function AdminMenu() {
         </TouchableOpacity>
       </View>
 
-      {/* ---------- SCROLLABLE LIST ---------- */}
       <FlatList
         data={menu}
         keyExtractor={(item) => item.id}
         renderItem={renderItem}
-        style={{ flex: 1 }}
         contentContainerStyle={{ paddingBottom: 20 }}
         ListEmptyComponent={
           <Text style={styles.emptyText}>No menu items added yet</Text>
         }
       />
 
-      {/* ---------- MODAL ---------- */}
       <Modal visible={modalVisible} transparent animationType="slide">
         <View style={styles.overlay}>
           <View style={styles.modal}>
@@ -183,7 +200,6 @@ export default function AdminMenu() {
               onChangeText={setPrice}
             />
 
-            {/* CATEGORY */}
             <Text style={styles.label}>Category</Text>
             <View style={styles.categoryRow}>
               {["Snack", "Breakfast", "Lunch"].map((item) => (
@@ -208,14 +224,50 @@ export default function AdminMenu() {
               ))}
             </View>
 
-            {/* TIME */}
             {(category === "Breakfast" || category === "Lunch") && (
-              <TextInput
-                placeholder="Serving Time (eg. 8:00 - 10:00 AM)"
-                style={styles.input}
-                value={time}
-                onChangeText={setTime}
-              />
+              <>
+                <TouchableOpacity
+                  style={styles.timeBtn}
+                  onPress={() => setShowStartPicker(true)}
+                >
+                  <Text>
+                    {startTime ? formatTime(startTime) : "Select Start Time"}
+                  </Text>
+                </TouchableOpacity>
+
+                <TouchableOpacity
+                  style={styles.timeBtn}
+                  onPress={() => setShowEndPicker(true)}
+                >
+                  <Text>
+                    {endTime ? formatTime(endTime) : "Select End Time"}
+                  </Text>
+                </TouchableOpacity>
+
+                {showStartPicker && (
+                  <DateTimePicker
+                    value={startTime || new Date()}
+                    mode="time"
+                    display={Platform.OS === "android" ? "clock" : "spinner"}
+                    onChange={(e, date) => {
+                      setShowStartPicker(false);
+                      if (date) setStartTime(date);
+                    }}
+                  />
+                )}
+
+                {showEndPicker && (
+                  <DateTimePicker
+                    value={endTime || new Date()}
+                    mode="time"
+                    display={Platform.OS === "android" ? "clock" : "spinner"}
+                    onChange={(e, date) => {
+                      setShowEndPicker(false);
+                      if (date) setEndTime(date);
+                    }}
+                  />
+                )}
+              </>
             )}
 
             <View style={styles.modalActions}>
@@ -232,122 +284,3 @@ export default function AdminMenu() {
     </View>
   );
 }
-
-/* ---------- STYLES ---------- */
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: "#f9f9f9",
-    padding: 20,
-    marginTop:20,
-  },
-
-  headerContainer: {
-    paddingBottom: 10,
-    backgroundColor: "#f9f9f9",
-  },
-
-  header: {
-    fontSize: 24,
-    fontWeight: "bold",
-    color: "#ff7a00",
-    textAlign: "center",
-    marginBottom: 10,
-  },
-
-  addBtn: {
-    flexDirection: "row",
-    backgroundColor: "#ff7a00",
-    padding: 12,
-    borderRadius: 10,
-    justifyContent: "center",
-  },
-
-  addText: {
-    color: "#fff",
-    marginLeft: 5,
-    fontWeight: "600",
-  },
-
-  card: {
-    backgroundColor: "#fff",
-    borderRadius: 12,
-    padding: 15,
-    marginVertical: 8,
-    flexDirection: "row",
-    justifyContent: "space-between",
-  },
-
-  name: { fontSize: 18, fontWeight: "bold" },
-  price: { color: "#ff7a00" },
-  category: { fontSize: 14 },
-  time: { fontSize: 13, color: "#555" },
-
-  actions: { justifyContent: "space-between" },
-
-  emptyText: {
-    textAlign: "center",
-    marginTop: 40,
-    color: "#999",
-  },
-
-  overlay: {
-    flex: 1,
-    backgroundColor: "rgba(0,0,0,0.5)",
-    justifyContent: "center",
-  },
-
-  modal: {
-    backgroundColor: "#fff",
-    margin: 20,
-    padding: 20,
-    borderRadius: 15,
-  },
-
-  modalTitle: {
-    fontSize: 20,
-    fontWeight: "bold",
-    textAlign: "center",
-    marginBottom: 10,
-  },
-
-  input: {
-    borderWidth: 1,
-    borderColor: "#ddd",
-    borderRadius: 10,
-    padding: 12,
-    marginBottom: 10,
-  },
-
-  label: { fontWeight: "600", marginBottom: 5 },
-
-  categoryRow: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    marginBottom: 10,
-  },
-
-  categoryBtn: {
-    padding: 8,
-    borderWidth: 1,
-    borderRadius: 8,
-    width: "30%",
-    alignItems: "center",
-  },
-
-  activeCategory: {
-    backgroundColor: "#ff7a00",
-    borderColor: "#ff7a00",
-  },
-
-  categoryText: { color: "#333" },
-  activeText: { color: "#fff", fontWeight: "600" },
-
-  modalActions: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-  },
-
-  cancel: { color: "red", fontWeight: "600" },
-  save: { color: "#4caf50", fontWeight: "600" },
-});
