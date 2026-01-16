@@ -19,7 +19,6 @@ export default function Index() {
             return;
           }
 
-          // 🔹 Fetch user role from Firestore
           const userRef = doc(db, "users", user.uid);
           const userSnap = await getDoc(userRef);
 

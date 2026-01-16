@@ -99,17 +99,17 @@ export default function SignupScreen() {
         createdAt: serverTimestamp(),
       });
 
-      Toast.show({
-        type: "success",
-        text1: "Account created",
-        text2: `Role: ${role}`,
-        position: "top",
-      });
+      // Toast.show({
+      //   type: "success",
+      //   text1: "Account created",
+      //   text2: `Role: ${role}`,
+      //   position: "top",
+      // });
 
       setTimeout(() => {
-        router.push("/is_signed_out/LoginScreen");
+        router.push("/is_signed_out/SignupSuccess");
            console.log("Signed up");
-      }, 1000);
+      }, 100);
     } catch (error) {
       Toast.show({
         type: "error",

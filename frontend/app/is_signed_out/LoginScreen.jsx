@@ -75,10 +75,10 @@ export default function LoginScreen() {
 
       const { role } = userSnap.data();
 
-      Toast.show({
-        type: "success",
-        text1: "Login Successful",
-      });
+      // Toast.show({
+      //   type: "success",
+      //   text1: "Login Successful",
+      // });
       setTimeout(() => {
         console.log("Logged in");
         if (role === "admin") {
@@ -98,7 +98,7 @@ export default function LoginScreen() {
           });
         }
         
-      }, 1000);
+      }, 400);
     } catch (error) {
       console.log("Login error:", error);
 
