@@ -35,7 +35,7 @@ export default function LoginScreen() {
   const handleLogin = async () => {
     if (loading) return;
     setLoading(true);
-    console.log("log in clicked");
+    console.log("\nlog in clicked");
 
 
     const usernameError = validateUsername(username);
