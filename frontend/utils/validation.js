@@ -8,6 +8,13 @@ export const isOnlyAlphabet = (name) => {
   return /^[A-Za-z ]+$/.test(name.trim());
 };
 
+export const haveAlphabet = (name) => {
+  return /^(?=(?:.*[A-Za-z]){3,})[A-Za-z0-9 ]+$/.test(name.trim());
+};
+
+export const isAlphabetAndDigit = (name) => {
+  return /^[A-Za-z +0-9 ]+$/.test(name.trim());
+};
 
 export const isOnlyNumber = (value) => {
   return /^[0-9]+$/.test(value);
@@ -17,7 +24,11 @@ export const isOnlyNumber = (value) => {
 export const hasMinLength = (value, length) => {
   return value && value.length >= length;
 };
-
+export const validateNumber = (name) => {
+  if (!isNotEmpty(name)) return "Name cannot be empty";
+  if (!isOnlyNumber(name)) return "Should contain only number";
+  return null;
+};
 
 
 export const validateName = (name) => {
@@ -27,6 +38,30 @@ export const validateName = (name) => {
   return null;
 };
 
+export const validateFoodName = (name) => {
+  if (!isNotEmpty(name)) return "Food name cannot be empty";
+  if (!isAlphabetAndDigit(name)) return "Food name must contain only alphabets and digits";
+  if (!haveAlphabet(name)) return "Food name must contain atleast 3 alphabets";
+  if (!hasMinLength(name, 3)) return "Food name must be at least 3 characters";
+  return null;
+};
+
+export const validateSameTime = (startTime, endTime) => {
+  if (!startTime || !endTime) return "Start and end time are required";
+
+  if (startTime.getTime() === endTime.getTime()) {
+    return "Start time and end time cannot be the same";
+  }
+
+  return null;
+};
+
+export const validateTimeOrder = (startTime, endTime) => {
+  if (endTime <= startTime) {
+    return "End time must be after start time";
+  }
+  return null;
+};
 
 export const validatePassword = (password) => {
   if (!isNotEmpty(password)) return "Password cannot be empty";
