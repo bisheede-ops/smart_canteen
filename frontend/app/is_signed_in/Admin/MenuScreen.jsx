@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from "react";
+import {validateFoodName,validateSameTime,validateTimeOrder,validateNumber} from "../../../utils/validation.js" 
 import {
   Alert,
   FlatList,
@@ -11,6 +12,7 @@ import {
   Platform,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
+import Toast from "react-native-toast-message";
 import DateTimePicker from "@react-native-community/datetimepicker";
 import {
   addDoc,
@@ -39,6 +41,8 @@ export default function AdminMenu() {
   const [showStartPicker, setShowStartPicker] = useState(false);
   const [showEndPicker, setShowEndPicker] = useState(false);
 
+    const [loading, setLoading] = useState(false);
+
   const formatTime = (date) =>
     date.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
 
@@ -56,8 +60,28 @@ export default function AdminMenu() {
   }, []);
 
   const handleSave = async () => {
+    if (loading) return;
+    console.log("save clicked");
+    setLoading(true);
     if (!name || !price) {
       Alert.alert("Error", "Fill all fields");
+      console.log("field not filled");
+      setLoading(false);
+      return;
+    }
+    const foodnameError = validateFoodName(name);
+    if (foodnameError) {
+      Alert.alert("Error",foodnameError);
+      console.log("food name error");
+      setLoading(false);
+      return;
+    }
+
+    const numberError = validateNumber(price);
+    if (numberError) {
+      Alert.alert("Error",`Price `+numberError);
+      console.log("price error");
+      setLoading(false);
       return;
     }
 
@@ -66,8 +90,21 @@ export default function AdminMenu() {
       (!startTime || !endTime)
     ) {
       Alert.alert("Error", "Please select serving time");
+      console.log("time not selected");
+      setLoading(false);
       return;
     }
+
+    if (category !== "Snack") {
+      const timeError = validateSameTime(startTime, endTime)  || 
+        validateTimeOrder(startTime, endTime);
+    if (timeError) {
+      Alert.alert("Error", timeError);
+      console.log("the given two times are same or the time end time is less than start time");
+      setLoading(false);
+      return;
+    }
+  }
 
     const data = {
       name,
@@ -88,9 +125,13 @@ export default function AdminMenu() {
       }
       closeModal();
       fetchMenu();
+      console.log("details added to database");
     } catch {
       Alert.alert("Error", "Operation failed");
+      console.log("details added failed");
+      setLoading(false);
     }
+    setLoading(false);
   };
 
   const handleDelete = (id) => {
@@ -102,6 +143,7 @@ export default function AdminMenu() {
         onPress: async () => {
           await deleteDoc(doc(db, "menu", id));
           fetchMenu();
+          console.log("item deleted");
         },
       },
     ]);
@@ -115,6 +157,7 @@ export default function AdminMenu() {
     setStartTime(null);
     setEndTime(null);
     setModalVisible(true);
+    console.log("add menu button clicked");
   };
 
   const openEdit = (item) => {
@@ -122,6 +165,7 @@ export default function AdminMenu() {
     setName(item.name);
     setPrice(item.price.toString());
     setCategory(item.category);
+    console.log("edit button clicked");
 
     if (item.time) {
       const [start, end] = item.time.split(" - ");
@@ -135,8 +179,10 @@ export default function AdminMenu() {
     setModalVisible(true);
   };
 
-  const closeModal = () => setModalVisible(false);
-
+  const closeModal = () => {
+    setModalVisible(false);
+    console.log("cancel button clicked");
+  };
   const renderItem = ({ item }) => (
     <View style={styles.card}>
       <View>
@@ -275,7 +321,9 @@ export default function AdminMenu() {
                 <Text style={styles.cancel}>Cancel</Text>
               </TouchableOpacity>
               <TouchableOpacity onPress={handleSave}>
-                <Text style={styles.save}>Save</Text>
+                <Text style={styles.save}>
+                  {loading ? "saving..." : "save"}
+                </Text>
               </TouchableOpacity>
             </View>
           </View>
