@@ -97,8 +97,14 @@ export default function HomeScreen() {
         <TouchableOpacity
           style={styles.logoutBtn}
           onPress={async () => {
-            await auth.signOut();
-            router.replace("/is_signed_out/LoginScreen");
+            try {
+              await auth.signOut();
+              router.replace("/is_signed_out/LoginScreen");
+              console.log("user logged out");
+            }catch (error) {
+              console.error("Logout Error:", error);
+              console.log("user logout failed");
+            }
           }}
         >
           <Ionicons name="log-out-outline" size={18} color="#fff" />
