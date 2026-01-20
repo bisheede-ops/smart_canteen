@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from "react";
+import { validateFoodName,validateNumber,validateName } from "../../../utils/validation";
 import {
   View,
   Text,
@@ -18,6 +19,7 @@ import {
 import { useRouter } from "expo-router";
 import Toast from "react-native-toast-message";
 import { db, auth } from "../../../firebaseConfig";
+import { isLoading } from "expo-font";
 
 const ORANGE = "#FF7A00";
 const INACTIVE = "#888";
@@ -30,10 +32,11 @@ export default function OrderPage() {
   const [quantity, setQuantity] = useState("");
   const [place, setPlace] = useState("");
 
-  // ✅ DELIVERY IS OFF BY DEFAULT
+  const [loading,setLoading]=useState(false);
+
   const [toBeDelivered, setToBeDelivered] = useState(false);
 
-  /* 🔹 FETCH LOGGED-IN USERNAME */
+
   useEffect(() => {
     const fetchUsername = async () => {
       const uid = auth.currentUser?.uid;
@@ -55,7 +58,8 @@ export default function OrderPage() {
   }, []);
 
   const placeOrder = async () => {
-    // ✅ BASIC VALIDATION
+    if(loading)return;
+    setLoading(true);
     if (!username || !foodName || !quantity) {
       Toast.show({
         type: "error",
@@ -63,16 +67,38 @@ export default function OrderPage() {
         text2: "Please fill all required fields",
         position: "top",
       });
+      setLoading(false);
       return;
     }
 
-    // ✅ PLACE REQUIRED ONLY IF DELIVERY IS ON
     if (toBeDelivered && !place) {
       Toast.show({
         type: "error",
         text1: "Delivery place required",
         position: "top",
       });
+      setLoading(false);
+      return;
+    }
+
+    const nameError = validateName(place);
+    if (nameError) {
+      Alert.alert("Error",nameError);
+      setLoading(false);
+      return;
+    }
+
+    const foodnameError = validateFoodName(foodName);
+    if (foodnameError) {
+      Alert.alert("Error",foodnameError);
+      setLoading(false);
+      return;
+    }
+
+    const numberError = validateNumber(quantity);
+    if (numberError) {
+      Alert.alert("Error",`Price `+numberError);
+      setLoading(false);
       return;
     }
 
@@ -81,7 +107,7 @@ export default function OrderPage() {
         username,
         foodName,
         quantity: Number(quantity),
-        place: toBeDelivered ? place : "", // ✅ SAFE
+        place: toBeDelivered ? place : "", 
         toBeDelivered,
         deliveryBy: "",
         createdAt: serverTimestamp(),
@@ -94,7 +120,6 @@ export default function OrderPage() {
         position: "top",
       });
 
-      // RESET
       setFoodName("");
       setQuantity("");
       setPlace("");
@@ -107,6 +132,7 @@ export default function OrderPage() {
         position: "top",
       });
     }
+    setLoading(false);
   };
 
   return (
@@ -114,7 +140,6 @@ export default function OrderPage() {
       <View style={styles.content}>
         <Text style={styles.title}>Food Order</Text>
 
-        {/* LOGGED-IN USER */}
         <Text style={styles.label}>Logged in as</Text>
         <View style={styles.userBox}>
           <Ionicons name="person-outline" size={18} color={ORANGE} />
@@ -129,7 +154,6 @@ export default function OrderPage() {
           keyboard="number-pad"
         />
 
-        {/* ✅ DELIVERY TOGGLE */}
         <TouchableOpacity
           style={styles.toggleRow}
           onPress={() => setToBeDelivered(!toBeDelivered)}
@@ -142,19 +166,16 @@ export default function OrderPage() {
           <Text style={styles.toggleText}>To be delivered</Text>
         </TouchableOpacity>
 
-        {/* ✅ PLACE INPUT ONLY IF DELIVERY IS SELECTED */}
         {toBeDelivered && (
           <Input label="Delivery Place" value={place} onChange={setPlace} />
         )}
 
-        {/* BUTTON */}
         <TouchableOpacity style={styles.button} onPress={placeOrder}>
           <Ionicons name="cart-outline" size={20} color="#fff" />
-          <Text style={styles.buttonText}>PLACE ORDER</Text>
+          <Text style={styles.buttonText}>{loading ? "ORDERING..." : "PLACE ORDER"}</Text>
         </TouchableOpacity>
       </View>
 
-      {/* NAVBAR */}
       <View style={styles.navbar}>
         <NavItem
           icon="home"
@@ -179,7 +200,6 @@ export default function OrderPage() {
   );
 }
 
-/* ---------- REUSABLE COMPONENTS ---------- */
 
 function Input({ label, value, onChange, keyboard }) {
   return (
@@ -211,7 +231,6 @@ function NavItem({ icon, label, onPress, active }) {
   );
 }
 
-/* ---------- STYLES ---------- */
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: "#FFF7ED" },
