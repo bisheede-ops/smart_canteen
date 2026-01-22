@@ -184,7 +184,7 @@ export default function DeliveryAssign() {
         <Text style={styles.orderText}><Text style={styles.bold}>Food:</Text> {item.foodName} x {item.quantity}</Text>
         <Text style={styles.orderText}><Text style={styles.bold}>Deliver to:</Text> {item.place || "Takeaway"}</Text>
         <Text style={styles.orderText}><Text style={styles.bold}>Ordered At:</Text> {formatOrderDate(item.createdAt)}</Text>
-        <Text style={styles.orderText}><Text style={styles.bold}>Delivered:</Text> {item.delivered}</Text>
+        <Text style={styles.orderText}><Text style={styles.bold}>Delivered:</Text> {item.delivery_status || "No"}</Text>
 
         {item.toBeDelivered && !item.deliveryAgentId && (
           <>

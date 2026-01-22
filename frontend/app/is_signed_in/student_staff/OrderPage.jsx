@@ -26,6 +26,7 @@ export default function OrderPage() {
   const router = useRouter();
 
   const [username, setUsername] = useState("");
+  const [phoneno, setPhoneno] = useState("");
   const [foodName, setFoodName] = useState("");
   const [quantity, setQuantity] = useState("");
   const [place, setPlace] = useState("");
@@ -45,7 +46,8 @@ export default function OrderPage() {
         const snap = await getDoc(userRef);
 
         if (snap.exists()) {
-          setUsername(snap.data().username || snap.data().name || "unknown");
+          setUsername(snap.data().name || "unknown");
+          setPhoneno(snap.data().phone || "unknown");
         }
       } catch (err) {
         console.error(err);
@@ -104,6 +106,7 @@ export default function OrderPage() {
       await addDoc(collection(db, "food_ordered"), {
         username,
         foodName,
+        phoneno,
         quantity: Number(quantity),
         place: toBeDelivered ? place : "", 
         toBeDelivered,
