@@ -37,7 +37,6 @@ export default function LoginScreen() {
     setLoading(true);
     console.log("\nlog in clicked");
 
-
     const usernameError = validateUsername(username);
     if (usernameError) {
       Toast.show({ type: "error", text1: usernameError });
@@ -169,10 +168,20 @@ export default function LoginScreen() {
 
         <View style={styles.footer}>
           <Text style={styles.footerText}>Don’t have an account?</Text>
-          <Link href="/is_signed_out/SignupScreen">
+          <Link href="/is_signed_out/SignupScreen" >
             <Text style={styles.signup}> Sign Up</Text>
           </Link>
         </View>
+
+        {/* added this to check new screens .keep it commented when not in use  */}
+        
+        {/* <View style={styles.footer}>
+          <Text style={styles.footerText}>just kept to test added screens {"\n"}comment when not needed</Text>
+          <Link href="/is_signed_in/student_staff/HomeScreen" >
+            <Text style={styles.signup} >click me</Text>
+          </Link>
+        </View> */}
+        
       </View>
 
       <Toast />
