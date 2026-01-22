@@ -30,9 +30,7 @@ import { Ionicons } from "@expo/vector-icons";
 const DELIVERY_STATUSES = [
   "Picked up",
   "On my way",
-  "Delivering soon",
   "Reached location",
-  "Delivery cancelled"
 ];
 
 export default function DeliveryOrders() {
