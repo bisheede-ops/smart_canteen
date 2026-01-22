@@ -3,12 +3,15 @@ import { router } from "expo-router";
 import {
   ActivityIndicator,
   FlatList,
-  StyleSheet,
   Text,
   View,
   TouchableOpacity,
+  Modal,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
+
+import {OrdersStyles as styles,ORANGE} from "@/assets/src/styles/OrdersStyles";
+
 import Toast from "react-native-toast-message";
 import {
   collection,
@@ -22,13 +25,23 @@ import {
 import { auth, db } from "../../../firebaseConfig";
 import { Ionicons } from "@expo/vector-icons";
 
-const ORANGE = "#FF7A00";
+
+
+const DELIVERY_STATUSES = [
+  "Picked up",
+  "On my way",
+  "Delivering soon",
+  "Reached location",
+  "Delivery cancelled"
+];
 
 export default function DeliveryOrders() {
   const [orders, setOrders] = useState([]);
   const [loading, setLoading] = useState(true);
 
-  // ✅ get current delivery agent UID
+  const [statusModalVisible, setStatusModalVisible] = useState(false);
+  const [selectedOrderId, setSelectedOrderId] = useState(null);
+
   const agentUid = auth.currentUser?.uid;
 
   useEffect(() => {
@@ -36,7 +49,6 @@ export default function DeliveryOrders() {
       Toast.show({
         type: "error",
         text1: "Not signed in",
-        text2: "Please login again",
       });
       setLoading(false);
       return;
@@ -45,14 +57,13 @@ export default function DeliveryOrders() {
     fetchOrders();
   }, [agentUid]);
 
-  // 🔹 Fetch orders assigned to this delivery agent
   const fetchOrders = async () => {
     setLoading(true);
     try {
       const q = query(
         collection(db, "food_ordered"),
         where("deliveryAgentId", "==", agentUid),
-        where("delivered", "==", false),
+        where("delivered", "==", false)
       );
 
       const snap = await getDocs(q);
@@ -63,16 +74,8 @@ export default function DeliveryOrders() {
       }));
 
       setOrders(list);
-
-      if (list.length === 0) {
-        Toast.show({
-          type: "info",
-          text1: "No Orders",
-          text2: "No orders assigned yet",
-        });
-      }
     } catch (error) {
-      console.error("Firestore error:", error);
+      console.error(error);
       Toast.show({
         type: "error",
         text1: "Failed to fetch orders",
@@ -82,70 +85,114 @@ export default function DeliveryOrders() {
     }
   };
 
-  // 🔹 Mark order as delivered + increment completed_order
-  const markDelivered = async (orderId) => {
+  const updateDeliveryStatus = async (orderId, status) => {
     try {
-      // 1️⃣ Update order document
       const orderRef = doc(db, "food_ordered", orderId);
       await updateDoc(orderRef, {
+        delivery_status: status,
+      });
+
+      setOrders((prev) =>
+        prev.map((order) =>
+          order.id === orderId
+            ? { ...order, delivery_status: status }
+            : order
+        )
+      );
+
+      Toast.show({
+        type: "success",
+        text1: "Status Updated",
+        text2: status,
+      });
+    } catch (error) {
+      console.error(error);
+      Toast.show({
+        type: "error",
+        text1: "Status update failed",
+      });
+    } finally {
+      setStatusModalVisible(false);
+      setSelectedOrderId(null);
+    }
+  };
+
+  const markDelivered = async (orderId) => {
+    try {
+      await updateDoc(doc(db, "food_ordered", orderId), {
         delivered: true,
       });
 
-      // 2️⃣ Increment completed_order for agent
-      const agentRef = doc(db, "delivery_agents", agentUid);
-      await updateDoc(agentRef, {
+      await updateDoc(doc(db, "delivery_agents", agentUid), {
         completed_order: increment(1),
       });
 
       Toast.show({
         type: "success",
-        text1: "Order delivered",
+        text1: "Order Delivered",
       });
 
-      // 3️⃣ Remove delivered order from UI
-      setOrders((prev) => prev.filter((order) => order.id !== orderId));
+      setOrders((prev) => prev.filter((o) => o.id !== orderId));
       router.push("/is_signed_in/Delivery/HomeScreen");
     } catch (err) {
-      console.error("Delivery update error:", err);
+      console.error(err);
       Toast.show({
         type: "error",
-        text1: "Update failed",
+        text1: "Delivery update failed",
       });
     }
   };
 
-  // 🔹 Render each order
-  const renderItem = ({ item }) => (
-    <View style={styles.card}>
-      <Text>
-        <Text style={styles.bold}>User:</Text> {item.username}
-      </Text>
-      <Text>
-        <Text style={styles.bold}>Food:</Text> {item.foodName}
-      </Text>
-      <Text>
-        <Text style={styles.bold}>Quantity:</Text> {item.quantity}
-      </Text>
+ const renderItem = ({ item }) => (
+  <View style={styles.card}>
 
-      {item.place && (
-        <Text>
-          <Text style={styles.bold}>Place:</Text> {item.place}
-        </Text>
-      )}
-
-      {!item.delivered ? (
-        <TouchableOpacity
-          style={styles.button}
-          onPress={() => markDelivered(item.id)}
-        >
-          <Ionicons name="checkmark-circle-outline" size={20} color="#fff" />
-          <Text style={styles.buttonText}>MARK DELIVERED</Text>
-        </TouchableOpacity>
-      ) : (
-        <Text style={styles.delivered}>✅ Delivered</Text>
-      )}
+    <View style={styles.row}>
+      <Text style={styles.label}>Food:</Text>
+      <Text style={styles.value}>{item.foodName}</Text>
     </View>
-  );
+
+    <View style={styles.row}>
+      <Text style={styles.label}>Quantity:</Text>
+      <Text style={styles.value}>{item.quantity}</Text>
+    </View>
+
+    {item.place && (
+      <View style={styles.row}>
+        <Text style={styles.label}>Place:</Text>
+        <Text style={styles.value}>{item.place}</Text>
+      </View>
+    )}
+
+    <View style={styles.row}>
+      <Text style={styles.label}>Phone No:</Text>
+      <Text style={styles.value}>{item.phoneno || "no number"}</Text>
+    </View>
+    <Text style={styles.status}>
+      Status: {item.delivery_status || "Not updated"}
+    </Text>
+
+    <View style={styles.btncontainer}>
+      <TouchableOpacity
+        style={styles.button}
+        onPress={() => {
+          setSelectedOrderId(item.id);
+          setStatusModalVisible(true);
+        }}
+      >
+        <Ionicons name="chevron-down" size={18} color="#fff" />
+        <Text style={styles.buttonText}>UPDATE STATUS</Text>
+      </TouchableOpacity>
+
+      <TouchableOpacity
+        style={styles.button}
+        onPress={() => markDelivered(item.id)}
+      >
+        <Ionicons name="checkmark-circle-outline" size={18} color="#fff" />
+        <Text style={styles.buttonText}>MARK DELIVERED</Text>
+      </TouchableOpacity>
+    </View>
+  </View>
+);
 
   return (
     <SafeAreaView style={styles.container}>
@@ -163,58 +210,32 @@ export default function DeliveryOrders() {
         />
       )}
 
+      <Modal transparent visible={statusModalVisible} animationType="fade">
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalBox}>
+            {DELIVERY_STATUSES.map((status) => (
+              <TouchableOpacity
+                key={status}
+                style={styles.modalItem}
+                onPress={() =>
+                  updateDeliveryStatus(selectedOrderId, status)
+                }
+              >
+                <Text style={styles.modalText}>{status}</Text>
+              </TouchableOpacity>
+            ))}
+
+            <TouchableOpacity
+              style={styles.cancelBtn}
+              onPress={() => setStatusModalVisible(false)}
+            >
+              <Text style={{ color: "red" }}>Cancel</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </Modal>
+
       <Toast />
     </SafeAreaView>
   );
 }
-
-/* ================= STYLES ================= */
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    padding: 20,
-    backgroundColor: "#FFF7ED",
-  },
-  title: {
-    fontSize: 22,
-    fontWeight: "bold",
-    marginBottom: 15,
-  },
-  card: {
-    backgroundColor: "#fff",
-    padding: 15,
-    borderRadius: 10,
-    marginBottom: 12,
-    borderWidth: 1,
-    borderColor: "#ddd",
-  },
-  bold: {
-    fontWeight: "bold",
-  },
-  button: {
-    backgroundColor: ORANGE,
-    flexDirection: "row",
-    justifyContent: "center",
-    alignItems: "center",
-    padding: 12,
-    borderRadius: 8,
-    marginTop: 10,
-  },
-  buttonText: {
-    color: "#fff",
-    marginLeft: 6,
-    fontWeight: "bold",
-  },
-  emptyText: {
-    textAlign: "center",
-    marginTop: 40,
-    fontSize: 16,
-    color: "#777",
-  },
-  delivered: {
-    marginTop: 10,
-    fontWeight: "bold",
-    color: "green",
-  },
-});
