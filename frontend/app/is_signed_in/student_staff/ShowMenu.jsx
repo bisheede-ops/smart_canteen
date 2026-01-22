@@ -1,40 +1,108 @@
-import React from "react";
+import React, { useEffect, useState } from "react";
 import {
   View,
   Text,
   StyleSheet,
-  ScrollView,
+  FlatList,
   TouchableOpacity,
+  Image,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
 
+import { collection, getDocs } from "firebase/firestore";
+import { db } from "../../../firebaseConfig";
+
 const ORANGE = "#FF7A00";
+
+const getCategoryImage = (category) => {
+  if (category === "Snack") return require("@/assets/images/snacks.webp");
+  if (category === "Breakfast") return require("@/assets/images/bf.webp");
+  if (category === "Lunch") return require("@/assets/images/lunch.jpg");
+  return "fast-food-outline";
+};
+
 
 export default function MenuScreen() {
   const router = useRouter();
 
+  const [menu, setMenu] = useState([]);
+    const [selectedCategory, setSelectedCategory] = useState("Snack"); // DEFAULT
+  
+    /* ---------- FETCH MENU ---------- */
+    useEffect(() => {
+      const fetchMenu = async () => {
+        const snapshot = await getDocs(collection(db, "menu"));
+        const list = snapshot.docs.map(doc => ({
+          id: doc.id,
+          ...doc.data(),
+        }));
+        setMenu(list);
+      };
+  
+      fetchMenu();
+    }, []);
+  
+    /* ---------- FILTERED MENU ---------- */
+    const filteredMenu = menu.filter(
+      item => item.category === selectedCategory
+    );
+
   return (
     <SafeAreaView style={styles.container}>
-      <ScrollView
-        contentContainerStyle={{ paddingBottom: 100 }}
-        showsVerticalScrollIndicator={false}
-      >
-        {/* APP NAME */}
+      {/* ---------- HEADER ---------- */}
+      <View style={styles.header}>
         <Text style={styles.appName}>SmartCanteen</Text>
-        <View style={styles.divider} />
+      </View>
 
-        {/* TITLE */}
-        <Text style={styles.title}>MENU</Text>
+      {/* ---------- CATEGORY TABS ---------- */}
+      <View style={styles.tabs}>
+        {["Snack", "Breakfast", "Lunch"].map(cat => (
+          <TouchableOpacity
+            key={cat}
+            style={[
+              styles.tab,
+              selectedCategory === cat && styles.activeTab,
+            ]}
+            onPress={() => setSelectedCategory(cat)}
+          >
+            <Text
+              style={[
+                styles.tabText,
+                selectedCategory === cat && styles.activeTabText,
+              ]}
+            >
+              {cat}
+            </Text>
+          </TouchableOpacity>
+        ))}
+      </View>
 
-        {/* MENU CARDS */}
-        <View style={styles.grid}>
-          <MenuCard title="Snacks" />
-          <MenuCard title="Breakfast (8:30 am - 10:00 am)" token />
-          <MenuCard title="Lunch (11:30 am - 2:00 pm)" token />
-        </View>
-      </ScrollView>
+      {/* ---------- MENU GRID ---------- */}
+      <FlatList
+        data={filteredMenu}
+        numColumns={2}
+        keyExtractor={item => item.id}
+        contentContainerStyle={{ paddingBottom: 100 }}
+        renderItem={({ item }) => (
+          <View style={styles.card}>
+            {/* OPTIONAL IMAGE PLACEHOLDER */}
+            <View style={styles.imageBox}>
+              <Image
+                 source={getCategoryImage(selectedCategory)}
+                  style={styles.foodImage}
+              />
+            </View>
+
+            <Text style={styles.foodName}>{item.name}</Text>
+            <Text style={styles.foodPrice}>₹ {item.price}</Text>
+          </View>
+        )}
+        ListEmptyComponent={
+          <Text style={styles.emptyText}>No items available</Text>
+        }
+      />
 
       {/* 🔻 BOTTOM NAVBAR */}
       <View style={styles.navbar}>
@@ -127,94 +195,116 @@ const styles = StyleSheet.create({
     backgroundColor: "#FFF4EB",
   },
 
+  header: {
+    padding: 16,
+    alignItems: "center",
+  },
+
   appName: {
     fontSize: 22,
     fontWeight: "700",
     color: ORANGE,
-    textAlign: "center",
-    marginTop: 16,
-    marginBottom: 20,
   },
 
-  divider: {
-    height: 4,
-    width: "100%",
+  tabs: {
+    flexDirection: "row",
+    justifyContent: "space-around",
+    marginBottom: 10,
+  },
+
+  tab: {
+    paddingVertical: 8,
+    paddingHorizontal: 18,
+    borderRadius: 20,
+    backgroundColor: "#FFE1C2",
+  },
+
+  activeTab: {
     backgroundColor: ORANGE,
-    marginVertical: 12,
-    borderRadius: 2,
   },
 
-  title: {
-    fontWeight: "600",
-    fontSize: 26,
-    textAlign: "center",
+  tabText: {
     color: ORANGE,
-    marginBottom: 40,
+    fontWeight: "600",
   },
 
-  grid: {
-    paddingHorizontal: 12,
+  activeTabText: {
+    color: "#fff",
   },
 
   card: {
-    backgroundColor: "#FFFFFF",
+    backgroundColor: "#fff",
     borderRadius: 16,
-    padding: 14,
-    marginBottom: 16,
+    padding: 12,
+    margin: 10,
+    width: "45%",
+    alignItems: "center",
     elevation: 3,
   },
 
-  cardHeader: {
-    flexDirection: "row",
-    justifyContent: "space-between",
+  imageBox: {
+    height: 80,
+    width: "100%",
+    backgroundColor: "#FFF1E4",
+    borderRadius: 12,
+    justifyContent: "center",
     alignItems: "center",
+    marginBottom: 8,
   },
 
-  cardTitle: {
-    fontSize: 16,
-    fontWeight: "700",
-    color: ORANGE,
-  },
-
-  tokenBtn: {
-    backgroundColor: ORANGE,
-    paddingHorizontal: 14,
-    paddingVertical: 6,
-    borderRadius: 20,
-  },
-
-  tokenText: {
-    color: "#FFFFFF",
-    fontSize: 12,
+  foodName: {
+    fontSize: 14,
     fontWeight: "600",
+    textAlign: "center",
   },
 
-  emptySpace: {
-    height: 60,
+  foodPrice: {
+    fontSize: 13,
+    color: ORANGE,
+    marginTop: 4,
+  },
+
+  emptyText: {
+    textAlign: "center",
+    color: "#999",
+    marginTop: 40,
   },
 
   /* ---------- NAVBAR ---------- */
   navbar: {
-    flexDirection: "row",
-    justifyContent: "space-around",
-    alignItems: "center",
-    height: 65,
-    backgroundColor: "#FFFFFF",
-    borderTopWidth: 1,
-    borderTopColor: "#FFD2A6",
     position: "absolute",
     bottom: 0,
     width: "100%",
+    height: 65,
+    flexDirection: "row",
+    justifyContent: "space-around",
+    alignItems: "center",
+    backgroundColor: "#fff",
+    borderTopWidth: 1,
+    borderTopColor: "#FFD2A6",
   },
 
   navItem: {
     alignItems: "center",
-    justifyContent: "center",
   },
 
   navText: {
     fontSize: 11,
     color: "#888",
     marginTop: 2,
+  },
+
+  foodImage: {
+  // width: 150,
+  // height: 100,
+  // resizeMode: "contain",
+
+    height: 80,
+    width: "100%",
+    backgroundColor: "#FFF1E4",
+    borderRadius: 12,
+    justifyContent: "center",
+    alignItems: "center",
+    marginBottom: 8,
   },
 });
