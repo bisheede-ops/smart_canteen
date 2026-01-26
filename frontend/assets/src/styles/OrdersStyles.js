@@ -9,9 +9,9 @@ export const OrdersStyles = StyleSheet.create({
   },
 
   title: {
-    fontSize: 24,        
+    fontSize: 30,        
     fontWeight: "bold",
-    marginBottom: 15,
+    marginBottom: 10,
   },
 
   emptyText: {
@@ -21,7 +21,12 @@ export const OrdersStyles = StyleSheet.create({
     color: "#777",
   },
 
-
+  sectionTitle: {
+    fontSize: 26,
+    fontWeight: "bold",
+    marginHorizontal: 0,
+    marginTop: 15,
+  },
   card: {
     backgroundColor: "#fff",
     padding: 15,

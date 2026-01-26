@@ -71,11 +71,11 @@ export default function Index() {
   return (
     <View style={styles.container}>
       <Image
-        source={require("../../assets/images/logo.png")}
+        source={require("../../assets/images/icon.png")}
         style={styles.logo}
         accessibilityLabel="Smart Canteen Logo"
       />
-      <Text style={styles.title}>Smart Canteen</Text>
+      {/* <Text style={styles.title}>Smart Canteen</Text> */}
     </View>
   );
 }

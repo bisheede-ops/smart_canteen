@@ -30,9 +30,22 @@ export default function HomeScreen() {
         console.error("Error fetching user:", error);
       }
     };
-
     fetchUserData();
+    
   }, []);
+  useEffect(() => {
+    if (user) {
+      checkDetails(user);
+    }
+  }, [user]);
+
+  const checkDetails = (user) => {
+    console.log("\n User details:");
+    console.log("UserName:",user.name);
+    console.log("User Email:",user.email);
+    console.log("User Phone:",user.phone);
+    console.log("User Role:",user.role);
+  }
 
   return (
     <SafeAreaView style={styles.container}>
@@ -41,27 +54,31 @@ export default function HomeScreen() {
           <Text style={styles.welcome}>Welcome,</Text>
           <Text style={styles.name}>{user ? user.name : ""}</Text>
         </View>
-
-        <View style={styles.actions}>
-          <ActionCard
-            icon="restaurant-outline"
-            label="View Menu"
-            onPress={() => router.push("/is_signed_in/student_staff/ShowMenu")}
-          />
-          <ActionCard
-            icon="receipt-outline"
-            label="Order Food"
-            onPress={() => router.push("/is_signed_in/student_staff/OrderPage")}
-          />
-        </View>
-        {/* 
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Popular Today</Text>
-
-          <FoodCard name="Veg Meals" price="₹60" />
-          <FoodCard name="Chicken Biriyani" price="₹120" />
-          <FoodCard name="Tea & Snacks" price="₹20" />
-        </View> */}
+          <View style={styles.actions}>
+            <ActionCard
+              icon="restaurant-outline"
+              label="View Menu"
+              onPress={() => router.push("/is_signed_in/student_staff/ShowMenu")}
+            />
+            <ActionCard
+              icon="receipt-outline"
+              label="Order Food"
+              onPress={() => router.push("/is_signed_in/student_staff/OrderPage")}
+            />
+          </View>
+          <View style={styles.actions}>
+            {/* <ActionCard
+              icon="restaurant-outline"
+              label="View Menu"
+              onPress={() => router.push("/is_signed_in/student_staff/ShowMenu")}
+            /> */}
+            <ActionCard
+              icon="receipt-outline"
+              label="Order Status"
+              onPress={() => router.push("/is_signed_in/student_staff/OrderStatus")}
+            />
+          </View>
+ 
       </ScrollView>
 
       <View style={styles.navbar}>

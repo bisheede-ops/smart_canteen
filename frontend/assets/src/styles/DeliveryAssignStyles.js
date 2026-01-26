@@ -5,13 +5,13 @@ const INACTIVE = "#888";
 export const DeliveryAssignStyles = StyleSheet.create({
   container: { flex: 1, backgroundColor: "#FFF7ED" },
   title: {
-    fontSize: 22,
+    fontSize: 28,
     fontWeight: "bold",
     paddingHorizontal: 20,
     marginBottom: 10,
   },
   sectionTitle: {
-    fontSize: 18,
+    fontSize: 22,
     fontWeight: "bold",
     marginHorizontal: 20,
     marginTop: 15,
@@ -30,10 +30,10 @@ export const DeliveryAssignStyles = StyleSheet.create({
     borderColor: "#ddd",
     marginHorizontal: 20,
   },
-  orderText: { fontSize: 14, marginBottom: 4 },
+  orderText: { fontSize: 18, marginBottom: 4 },
   bold: { fontWeight: "bold" },
-  assigned: { fontWeight: "bold", marginTop: 5, color: "green" },
-  assignTitle: { marginTop: 5, fontWeight: "bold" },
+  assigned: { fontWeight: "bold", marginTop: 5, color: "green",fontSize:20, },
+  assignTitle: { marginTop: 5, fontWeight: "bold" ,fontSize:18,},
   agentsRow: { flexDirection: "row", flexWrap: "wrap", marginTop: 5 },
   agentButton: {
     backgroundColor: ORANGE,
@@ -54,7 +54,7 @@ export const DeliveryAssignStyles = StyleSheet.create({
     color: "#fff",
     fontWeight: "600",
 },
-  agentText: { color: "#fff", fontWeight: "bold", fontSize: 12 },
+  agentText: { color: "#fff", fontWeight: "bold", fontSize: 18 },
   navbar: {
     flexDirection: "row",
     justifyContent: "space-around",
