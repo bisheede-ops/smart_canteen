@@ -15,7 +15,7 @@ import {
   smartAssignAll,
   getDistance,
   getZone,
-} from "@/components/AssignHelpers"; // import helpers
+} from "../../../components/AssignHelpers";
 const INACTIVE = "#DDD";
 export default function DeliveryAssign() {
   const router = useRouter();
