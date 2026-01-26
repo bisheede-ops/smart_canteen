@@ -16,7 +16,7 @@ const gridItems = [
     onPress: () => router.push("is_signed_in/Admin/AddDeliveryAgent"),
   },
   { title: "Emergency Meal", subtitle: "Instant food" },
-  { title: "Special Food", subtitle: "Today's special" },
+  { title: "Special Food", subtitle: "Today's special", onPress: () => router.push("/is_signed_in/Admin/SpecialFood"), },
   { title: "Subscription", subtitle: "Weekly plan" },
   { title: "Token", subtitle: "Generate token" },
   {

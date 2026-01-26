@@ -62,21 +62,23 @@ export default function HomeScreen() {
             />
             <ActionCard
               icon="receipt-outline"
-              label="Order history"
-              onPress={() => router.push("/is_signed_in/student_staff/OrderHistory")}
-            />
-          </View>
-          <View style={styles.actions}>
-            {/* <ActionCard
-              icon="restaurant-outline"
-              label="View Menu"
-              onPress={() => router.push("/is_signed_in/student_staff/ShowMenu")}
-            /> */}
-            <ActionCard
-              icon="receipt-outline"
               label="Order Status"
               onPress={() => router.push("/is_signed_in/student_staff/OrderStatus")}
             />
+          </View>
+          <View style={styles.actions}>
+          <ActionCard
+            icon="sparkles-outline"
+            label="Special food"
+            onPress={() =>
+              router.push("/is_signed_in/student_staff/SpecialFood")
+            }
+          />
+          <ActionCard
+            icon="receipt-outline"
+            label="Order history"
+            onPress={() => router.push("/is_signed_in/student_staff/OrderHistory")}
+          />
           </View>
  
       </ScrollView>
@@ -86,12 +88,12 @@ export default function HomeScreen() {
         <NavItem
           icon="sparkles-outline"
           label="Special Food"
-          // onPress={() => router.push("/is_signed_in/student_staff/ShowMenu")}
+          onPress={() => router.push("/is_signed_in/student_staff/SpecialFood")}
         />
         <NavItem
-          icon="star-outline"
-          label="Weekly Subscription"
-        //   onPress={() => router.push("/is_signed_in/student_staff/OrderPage")}
+          icon="notifications-outline"
+          label="Notification"
+          onPress={() => router.push("/is_signed_in/student_staff/Notification")}
         />
         <NavItem
           icon="person-outline"
