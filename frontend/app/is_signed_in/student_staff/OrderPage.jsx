@@ -1,52 +1,94 @@
 import React, { useState, useEffect } from "react";
-import { validateFoodName,validateNumber,validateName } from "../../../utils/validation";
+import { Alert } from "react-native";
 import {
   View,
   Text,
   TextInput,
   TouchableOpacity,
 } from "react-native";
+
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Ionicons } from "@expo/vector-icons";
 import {
   collection,
   addDoc,
-  serverTimestamp,
   doc,
   getDoc,
 } from "firebase/firestore";
-import { useRouter } from "expo-router";
+
+import { useRouter, useLocalSearchParams } from "expo-router";
 import Toast from "react-native-toast-message";
 import { db, auth } from "../../../firebaseConfig";
-import { isLoading } from "expo-font";
 
-import {styles,ORANGE,INACTIVE} from "@/assets/src/styles/OrderPageStyles.js"
+import {
+  validateFoodName,
+  validateNumber,
+  validateName,
+} from "../../../utils/validation";
 
+import {
+  styles,
+  ORANGE,
+  INACTIVE,
+} from "@/assets/src/styles/OrderPageStyles.js";
+
+/* =========================
+   DELIVERY PLACES
+========================= */
+const PLACES = [
+  "Cheruthoni",
+  "Painavu",
+  "Paremavu",
+  "Nila Hostel",
+  "Kabani Hostel",
+  "Staff quarters near LH",
+  "Staff quarters near admninistrtive block",
+];
+
+/* =========================
+   ORDER PAGE
+========================= */
 export default function OrderPage() {
   const router = useRouter();
+  const params = useLocalSearchParams();
 
   const [username, setUsername] = useState("");
   const [phoneno, setPhoneno] = useState("");
   const [foodName, setFoodName] = useState("");
   const [quantity, setQuantity] = useState("");
+  const [price, setPrice] = useState(0);
+  const [totalPrice, setTotalPrice] = useState(0);
+
   const [place, setPlace] = useState("");
-
-  const [loading,setLoading]=useState(false);
-
+  const [showDropdown, setShowDropdown] = useState(false);
   const [toBeDelivered, setToBeDelivered] = useState(false);
+  const [loading, setLoading] = useState(false);
 
-
+  /* ---------- AUTO FILL FOOD NAME & PRICE ---------- */
   useEffect(() => {
-    const fetchUsername = async () => {
+    if (params?.name) setFoodName(params.name);
+    if (params?.price) setPrice(Number(params.price));
+  }, [params]);
+
+  /* ---------- AUTO CALCULATE TOTAL PRICE ---------- */
+  useEffect(() => {
+    if (quantity && price) {
+      setTotalPrice(Number(quantity) * price);
+    } else {
+      setTotalPrice(0);
+    }
+  }, [quantity, price]);
+
+  /* ---------- FETCH USER DETAILS ---------- */
+  useEffect(() => {
+    const fetchUserDetails = async () => {
       const uid = auth.currentUser?.uid;
       if (!uid) return;
 
       try {
-        const userRef = doc(db, "users", uid);
-        const snap = await getDoc(userRef);
-
+        const snap = await getDoc(doc(db, "users", uid));
         if (snap.exists()) {
-          setUsername(snap.data().name || "unknown");
+          setUsername(snap.data().username || snap.data().name || "unknown");
           setPhoneno(snap.data().phone || "unknown");
         }
       } catch (err) {
@@ -54,85 +96,76 @@ export default function OrderPage() {
       }
     };
 
-    fetchUsername();
+    fetchUserDetails();
   }, []);
 
+  /* ---------- PLACE ORDER ---------- */
   const placeOrder = async () => {
-    if(loading)return;
+    if (loading) return;
     setLoading(true);
-    if (!username || !foodName || !quantity) {
-      Toast.show({
-        type: "error",
-        text1: "Missing details",
-        text2: "Please fill all required fields",
-        position: "top",
-      });
+
+    if (!foodName || !quantity) {
+      Toast.show({ type: "error", text1: "Missing details" });
       setLoading(false);
       return;
     }
 
-    if (toBeDelivered && !place) {
-      Toast.show({
-        type: "error",
-        text1: "Delivery place required",
-        position: "top",
-      });
+    const foodError = validateFoodName(foodName);
+    if (foodError) {
+      Alert.alert("Error", foodError);
       setLoading(false);
       return;
     }
 
-    const nameError = validateName(place);
-    if (nameError) {
-      Alert.alert("Error",nameError);
+    const qtyError = validateNumber(quantity);
+    if (qtyError) {
+      Alert.alert("Error", qtyError);
       setLoading(false);
       return;
     }
 
-    const foodnameError = validateFoodName(foodName);
-    if (foodnameError) {
-      Alert.alert("Error",foodnameError);
-      setLoading(false);
-      return;
-    }
+    if (toBeDelivered) {
+      if (!place) {
+        Alert.alert("Error", "Delivery place required");
+        setLoading(false);
+        return;
+      }
 
-    const numberError = validateNumber(quantity);
-    if (numberError) {
-      Alert.alert("Error",`Price `+numberError);
-      setLoading(false);
-      return;
+      const placeError = validateName(place);
+      if (placeError) {
+        Alert.alert("Error", placeError);
+        setLoading(false);
+        return;
+      }
     }
 
     try {
       await addDoc(collection(db, "food_ordered"), {
+        userId: auth.currentUser.uid,
         username,
+                phoneno,
         foodName,
-        phoneno,
         quantity: Number(quantity),
-        place: toBeDelivered ? place : "", 
+        price,
+        totalPrice,
+        place: toBeDelivered ? place : "",
         toBeDelivered,
         deliveryBy: "",
-        createdAt: serverTimestamp(),
+
+        createdAt: new Date(),
       });
 
-      Toast.show({
-        type: "success",
-        text1: "Order Placed",
-        visibilityTime: 2000,
-        position: "top",
-      });
+      Toast.show({ type: "success", text1: "Order Placed" });
 
-      setFoodName("");
       setQuantity("");
       setPlace("");
+      setShowDropdown(false);
       setToBeDelivered(false);
-    } catch (error) {
-      console.error(error);
-      Toast.show({
-        type: "error",
-        text1: "Order Failed",
-        position: "top",
-      });
+      setTotalPrice(0);
+    } catch (err) {
+      Toast.show({ type: "error", text1: "Order Failed" });
     }
+
     setLoading(false);
   };
 
@@ -144,16 +177,24 @@ export default function OrderPage() {
         <Text style={styles.label}>Logged in as</Text>
         <View style={styles.userBox}>
           <Ionicons name="person-outline" size={18} color={ORANGE} />
-          <Text style={styles.usernameText}>{username || "Loading..."}</Text>
+          <Text style={styles.usernameText}>{username}</Text>
         </View>
 
-        <Input label="Food Name" value={foodName} onChange={setFoodName} />
+        <Input label="Food Name" value={foodName} editable={false} />
+
         <Input
           label="Quantity"
           value={quantity}
           onChange={setQuantity}
           keyboard="number-pad"
         />
+
+        {totalPrice > 0 && (
+          <View style={styles.priceContainer}>
+            <Text style={styles.priceTitle}>TOTAL AMOUNT</Text>
+            <Text style={styles.priceText}>₹ {totalPrice}</Text>
+          </View>
+        )}
 
         <TouchableOpacity
           style={styles.toggleRow}
@@ -167,13 +208,68 @@ export default function OrderPage() {
           <Text style={styles.toggleText}>To be delivered</Text>
         </TouchableOpacity>
 
+        {/* ---------- DELIVERY PLACE DROPDOWN ---------- */}
         {toBeDelivered && (
-          <Input label="Delivery Place" value={place} onChange={setPlace} />
+          <View style={{ marginTop: 12 }}>
+            <Text style={styles.label}>Delivery Place</Text>
+
+            <TouchableOpacity
+              style={[
+                styles.input,
+                {
+                  flexDirection: "row",
+                  justifyContent: "space-between",
+                  alignItems: "center",
+                },
+              ]}
+              onPress={() => setShowDropdown(!showDropdown)}
+            >
+              <Text style={{ color: place ? "#000" : "#999" }}>
+                {place || "Select place"}
+              </Text>
+              <Ionicons
+                name={showDropdown ? "chevron-up" : "chevron-down"}
+                size={20}
+                color={ORANGE}
+              />
+            </TouchableOpacity>
+
+            {showDropdown && (
+              <View
+                style={{
+                  borderWidth: 1,
+                  borderColor: "#ddd",
+                  borderRadius: 8,
+                  marginTop: 6,
+                  backgroundColor: "#fff",
+                }}
+              >
+                {PLACES.map((item) => (
+                  <TouchableOpacity
+                    key={item}
+                    style={{
+                      padding: 12,
+                      borderBottomWidth: 1,
+                      borderBottomColor: "#eee",
+                    }}
+                    onPress={() => {
+                      setPlace(item);
+                      setShowDropdown(false);
+                    }}
+                  >
+                    <Text>{item}</Text>
+                  </TouchableOpacity>
+                ))}
+              </View>
+            )}
+          </View>
         )}
 
         <TouchableOpacity style={styles.button} onPress={placeOrder}>
           <Ionicons name="cart-outline" size={20} color="#fff" />
-          <Text style={styles.buttonText}>{loading ? "ORDERING..." : "PLACE ORDER"}</Text>
+          <Text style={styles.buttonText}>
+            {loading ? "ORDERING..." : "PLACE ORDER"}
+          </Text>
         </TouchableOpacity>
       </View>
 
@@ -192,17 +288,17 @@ export default function OrderPage() {
         <NavItem
           icon="person-outline"
           label="Profile"
-          onPress={() =>
-            router.push("/is_signed_in/student_staff/ProfileScreen")
-          }
+          onPress={() => router.push("/is_signed_in/student_staff/ProfileScreen")}
         />
       </View>
     </SafeAreaView>
   );
 }
 
-
-function Input({ label, value, onChange, keyboard }) {
+/* =========================
+   INPUT COMPONENT
+========================= */
+function Input({ label, value, onChange, keyboard, editable = true }) {
   return (
     <>
       <Text style={styles.label}>{label}</Text>
@@ -210,16 +306,27 @@ function Input({ label, value, onChange, keyboard }) {
         value={value}
         onChangeText={onChange}
         keyboardType={keyboard}
-        style={styles.input}
+        editable={editable}
+        style={[
+          styles.input,
+          !editable && { backgroundColor: "#F3F3F3" },
+        ]}
       />
     </>
   );
 }
 
+/* =========================
+   NAV ITEM COMPONENT
+========================= */
 function NavItem({ icon, label, onPress, active }) {
   return (
     <TouchableOpacity style={styles.navItem} onPress={onPress}>
-      <Ionicons name={icon} size={24} color={active ? ORANGE : INACTIVE} />
+      <Ionicons
+        name={icon}
+        size={24}
+        color={active ? ORANGE : INACTIVE}
+      />
       <Text
         style={[
           styles.navText,

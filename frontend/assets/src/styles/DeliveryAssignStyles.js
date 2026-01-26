@@ -70,4 +70,10 @@ export const DeliveryAssignStyles = StyleSheet.create({
   navItem: { alignItems: "center" },
   navText: { fontSize: 11, color: "#888", marginTop: 2 },
   active: { color: ORANGE, fontWeight: "bold" },
+
 });
+export const floatingButtonStyles = StyleSheet.create({
+  button: { position: "absolute", bottom: 30, right: 20, backgroundColor: "#28a745", paddingHorizontal: 20, paddingVertical: 12, borderRadius: 30, elevation: 5 },
+  text: { color: "#fff", fontWeight: "bold", fontSize: 16 },
+});
+

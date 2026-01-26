@@ -1,3 +1,4 @@
+
 import { useEffect, useMemo, useState } from "react";
 import {
   ActivityIndicator,
@@ -95,33 +96,15 @@ export default function OrderStatus() {
   };
 
   const listData = useMemo(() => {
-    const sorted = [...orders].sort((a, b) => {
-      const d1 = parseOrderDate(b.createdAt);
-      const d2 = parseOrderDate(a.createdAt);
-      return (d1?.getTime() || 0) - (d2?.getTime() || 0);
-    });
+    // Only include non-delivered orders
+    const notDelivered = orders.filter(o => !o.delivered);
 
-    const notDelivered = sorted.filter(o => !o.delivered);
-    const delivered = sorted.filter(o => o.delivered);
-
-    return [
-      { type: "header", title: "Not Delivered Orders" },
-      ...(notDelivered.length
-        ? notDelivered.map(o => ({ ...o, type: "order" }))
-        : [{ type: "empty", text: "No pending orders" }]),
-
-      { type: "header", title: "Delivered Orders" },
-      ...(delivered.length
-        ? delivered.map(o => ({ ...o, type: "order" }))
-        : [{ type: "empty", text: "No delivered orders" }]),
-    ];
+    return notDelivered.length
+      ? notDelivered.map(o => ({ ...o, type: "order" }))
+      : [{ type: "empty", text: "No pending orders" }];
   }, [orders]);
 
   const renderItem = ({ item }) => {
-    if (item.type === "header") {
-      return <Text style={styles.sectionTitle}>{item.title}</Text>;
-    }
-
     if (item.type === "empty") {
       return <Text style={styles.emptyText}>{item.text}</Text>;
     }
@@ -129,32 +112,33 @@ export default function OrderStatus() {
     return (
       <View style={styles.card}>
         <Text style={styles.value}>
-          <Text style={styles.label}>Food:</Text>{" "}
-          {item.foodName} × {item.quantity}
+          <Text style={styles.label}>Food:</Text> {item.foodName} × {item.quantity}
         </Text>
 
         <Text style={styles.value}>
-          <Text style={styles.label}>Ordered At:</Text>{" "}
-          {formatOrderDate(item.createdAt)}
+          <Text style={styles.label}>Ordered At:</Text> {formatOrderDate(item.createdAt)}
         </Text>
 
         <Text style={styles.value}>
-          <Text style={styles.label}>Delivery Agent:</Text>{" "}
-          {item.deliveryAgentName || "Not Assigned"}
+          <Text style={styles.label}>Price:</Text> ₹{item.totalPrice}
         </Text>
 
-      {item.deliveryAgentName && (
-        <Text style={styles.status}>
-          Status: {item.delivery_status || "Not Picked up"}
+        <Text style={styles.value}>
+          <Text style={styles.label}>Delivery Agent:</Text> {item.deliveryAgentName || "Not Assigned"}
         </Text>
-      )}
+
+        {item.deliveryAgentName && (
+          <Text style={styles.status}>
+            Status: {item.delivery_status || "Not Picked up"}
+          </Text>
+        )}
       </View>
     );
   };
 
   return (
     <SafeAreaView style={styles.container}>
-      <Text style={styles.title}>My Orders</Text>
+      <Text style={styles.title}>My Pending Orders</Text>
 
       {loading ? (
         <ActivityIndicator size="large" color={ORANGE} />

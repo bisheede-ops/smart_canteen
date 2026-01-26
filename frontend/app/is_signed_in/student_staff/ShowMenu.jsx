@@ -3,8 +3,8 @@ import {
   View,
   Text,
   StyleSheet,
-  FlatList,
   TouchableOpacity,
+  FlatList,
   Image,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
@@ -14,40 +14,44 @@ import { useRouter } from "expo-router";
 import { collection, getDocs } from "firebase/firestore";
 import { db } from "../../../firebaseConfig";
 
+/* ---------- CONSTANT ---------- */
 const ORANGE = "#FF7A00";
 
+/* ---------- CATEGORY IMAGE ---------- */
 const getCategoryImage = (category) => {
-  if (category === "Snack") return require("@/assets/images/snacks.webp");
-  if (category === "Breakfast") return require("@/assets/images/bf.webp");
-  if (category === "Lunch") return require("@/assets/images/lunch.jpg");
-  return "fast-food-outline";
+  if (category === "Snack")
+    return require("../../../assets/images/snacks.webp");
+  if (category === "Breakfast")
+    return require("../../../assets/images/bf.webp");
+  if (category === "Lunch")
+    return require("../../../assets/images/lunch.jpg");
+  return require("../../../assets/images/snacks.webp");
 };
-
 
 export default function MenuScreen() {
   const router = useRouter();
 
   const [menu, setMenu] = useState([]);
-    const [selectedCategory, setSelectedCategory] = useState("Snack"); // DEFAULT
-  
-    /* ---------- FETCH MENU ---------- */
-    useEffect(() => {
-      const fetchMenu = async () => {
-        const snapshot = await getDocs(collection(db, "menu"));
-        const list = snapshot.docs.map(doc => ({
-          id: doc.id,
-          ...doc.data(),
-        }));
-        setMenu(list);
-      };
-  
-      fetchMenu();
-    }, []);
-  
-    /* ---------- FILTERED MENU ---------- */
-    const filteredMenu = menu.filter(
-      item => item.category === selectedCategory
-    );
+  const [selectedCategory, setSelectedCategory] = useState("Snack");
+
+  /* ---------- FETCH MENU ---------- */
+  useEffect(() => {
+    const fetchMenu = async () => {
+      const snapshot = await getDocs(collection(db, "menu"));
+      const list = snapshot.docs.map((doc) => ({
+        id: doc.id,
+        ...doc.data(),
+      }));
+      setMenu(list);
+    };
+
+    fetchMenu();
+  }, []);
+
+  /* ---------- FILTER MENU ---------- */
+  const filteredMenu = menu.filter(
+    (item) => item.category === selectedCategory
+  );
 
   return (
     <SafeAreaView style={styles.container}>
@@ -58,7 +62,7 @@ export default function MenuScreen() {
 
       {/* ---------- CATEGORY TABS ---------- */}
       <View style={styles.tabs}>
-        {["Snack", "Breakfast", "Lunch"].map(cat => (
+        {["Snack", "Breakfast", "Lunch"].map((cat) => (
           <TouchableOpacity
             key={cat}
             style={[
@@ -83,20 +87,41 @@ export default function MenuScreen() {
       <FlatList
         data={filteredMenu}
         numColumns={2}
-        keyExtractor={item => item.id}
+        keyExtractor={(item) => item.id}
         contentContainerStyle={{ paddingBottom: 100 }}
         renderItem={({ item }) => (
           <View style={styles.card}>
-            {/* OPTIONAL IMAGE PLACEHOLDER */}
             <View style={styles.imageBox}>
               <Image
-                 source={getCategoryImage(selectedCategory)}
-                  style={styles.foodImage}
+                source={getCategoryImage(selectedCategory)}
+                style={styles.foodImage}
               />
             </View>
 
             <Text style={styles.foodName}>{item.name}</Text>
             <Text style={styles.foodPrice}>₹ {item.price}</Text>
+
+            {/* ---------- GET TOKEN (ONLY FOR BREAKFAST & LUNCH) ---------- */}
+            {(item.category === "Breakfast" ||
+              item.category === "Lunch") && (
+              <TouchableOpacity
+                style={styles.tokenBtn}
+                onPress={() =>
+                  router.push({
+                    pathname:
+                      "/is_signed_in/student_staff/OrderPage",
+                    params: {
+                      itemId: item.id,
+                      name: item.name,
+                      price: item.price,
+                      category: item.category,
+                    },
+                  })
+                }
+              >
+                <Text style={styles.tokenBtnText}>Get Token</Text>
+              </TouchableOpacity>
+            )}
           </View>
         )}
         ListEmptyComponent={
@@ -104,7 +129,7 @@ export default function MenuScreen() {
         }
       />
 
-      {/* 🔻 BOTTOM NAVBAR */}
+      {/* ---------- BOTTOM NAV ---------- */}
       <View style={styles.navbar}>
         <NavItem
           icon="home-outline"
@@ -114,12 +139,7 @@ export default function MenuScreen() {
           }
         />
 
-        <NavItem
-          icon="restaurant"
-          label="Menu"
-          active
-         
-        />
+        <NavItem icon="restaurant" label="Menu" active />
 
         <NavItem
           icon="receipt-outline"
@@ -141,45 +161,19 @@ export default function MenuScreen() {
   );
 }
 
-/* ---------- MENU CARD ---------- */
-function MenuCard({ title, token = false }) {
-  return (
-    <View style={styles.card}>
-      <View style={styles.cardHeader}>
-        <Text style={styles.cardTitle}>{title}</Text>
-
-        {token && (
-          <TouchableOpacity style={styles.tokenBtn}>
-            <Text style={styles.tokenText}>Get a Token</Text>
-          </TouchableOpacity>
-        )}
-      </View>
-
-      <View style={styles.emptySpace} />
-    </View>
-  );
-}
-
 /* ---------- NAV ITEM ---------- */
-function NavItem({ icon, label, onPress, active, danger }) {
+function NavItem({ icon, label, onPress, active }) {
   return (
-    <TouchableOpacity
-      style={styles.navItem}
-      onPress={onPress}
-      activeOpacity={0.7}
-    >
+    <TouchableOpacity style={styles.navItem} onPress={onPress}>
       <Ionicons
         name={icon}
         size={24}
-        color={
-          danger ? "#E53935" : active ? ORANGE : "#888"
-        }
+        color={active ? ORANGE : "#888"}
       />
       <Text
         style={[
           styles.navText,
           active && { color: ORANGE, fontWeight: "bold" },
-          danger && { color: "#E53935" },
         ]}
       >
         {label}
@@ -252,6 +246,13 @@ const styles = StyleSheet.create({
     marginBottom: 8,
   },
 
+  foodImage: {
+    height: 80,
+    width: "100%",
+    resizeMode: "cover",
+    borderRadius: 12,
+  },
+
   foodName: {
     fontSize: 14,
     fontWeight: "600",
@@ -264,13 +265,26 @@ const styles = StyleSheet.create({
     marginTop: 4,
   },
 
+  tokenBtn: {
+    marginTop: 8,
+    backgroundColor: ORANGE,
+    paddingVertical: 6,
+    paddingHorizontal: 16,
+    borderRadius: 20,
+  },
+
+  tokenBtnText: {
+    color: "#fff",
+    fontSize: 12,
+    fontWeight: "600",
+  },
+
   emptyText: {
     textAlign: "center",
     color: "#999",
     marginTop: 40,
   },
 
-  /* ---------- NAVBAR ---------- */
   navbar: {
     position: "absolute",
     bottom: 0,
@@ -292,19 +306,5 @@ const styles = StyleSheet.create({
     fontSize: 11,
     color: "#888",
     marginTop: 2,
-  },
-
-  foodImage: {
-  // width: 150,
-  // height: 100,
-  // resizeMode: "contain",
-
-    height: 80,
-    width: "100%",
-    backgroundColor: "#FFF1E4",
-    borderRadius: 12,
-    justifyContent: "center",
-    alignItems: "center",
-    marginBottom: 8,
   },
 });

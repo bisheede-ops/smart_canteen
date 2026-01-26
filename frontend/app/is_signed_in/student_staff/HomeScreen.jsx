@@ -62,8 +62,8 @@ export default function HomeScreen() {
             />
             <ActionCard
               icon="receipt-outline"
-              label="Order Food"
-              onPress={() => router.push("/is_signed_in/student_staff/OrderPage")}
+              label="Order history"
+              onPress={() => router.push("/is_signed_in/student_staff/OrderHistory")}
             />
           </View>
           <View style={styles.actions}>
