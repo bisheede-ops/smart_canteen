@@ -10,7 +10,7 @@ import {
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { auth, db } from "../../../firebaseConfig";
-import { ORANGE } from "@/assets/src/styles/OrderPageStyles";
+const ORANGE = "#FF7A00"
 
 /* =========================
    STYLES (DEFINED FIRST)
@@ -31,14 +31,14 @@ const localStyles = {
   },
 
   card: {
-    backgroundColor: "#fff",
+    backgroundColor:  "#fff",
     borderRadius: 14,
     padding: 16,
     marginBottom: 16,
-    borderLeftWidth: 5,
-    borderLeftColor: ORANGE,
-    elevation: 3,
-    shadowColor: "#000",
+    borderLeftWidth: 10,
+    borderLeftColor:  ORANGE,
+    elevation: 0,
+    shadowColor: ORANGE,
     shadowOpacity: 0.1,
     shadowRadius: 6,
     shadowOffset: { width: 0, height: 3 },
