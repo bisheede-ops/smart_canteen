@@ -38,6 +38,29 @@ export const styles = StyleSheet.create({
     borderRadius: 10,
     marginTop: 15,
   },
+  priceContainer: {
+  backgroundColor: "#f5d6ae",
+  borderRadius: 14,
+  paddingVertical: 16,
+  paddingHorizontal: 20,
+  marginVertical: 14,
+  alignItems: "center",
+  elevation: 4,
+},
+  priceTitle: {
+  fontSize: 18,
+  fontWeight:"bold",
+  color: "#080808",
+  letterSpacing: 1,
+  marginBottom: 4,
+},
+
+priceText: {
+  fontSize: 26,
+  fontWeight: "bold",
+  color: "#080808",
+},
+
   buttonText: { color: "#fff", fontWeight: "bold", marginLeft: 8 },
   navbar: {
     flexDirection: "row",
