@@ -138,17 +138,16 @@ export default function MenuScreen() {
             router.push("/is_signed_in/student_staff/HomeScreen")
           }
         />
-
-        <NavItem icon="restaurant" label="Menu" active />
-
         <NavItem
-          icon="receipt-outline"
-          label="Orders"
-          onPress={() =>
-            router.push("/is_signed_in/student_staff/OrderPage")
-          }
+          icon="sparkles-outline"
+          label="Special Food"
+          onPress={() => router.push("/is_signed_in/student_staff/SpecialFood")}
         />
-
+        <NavItem
+          icon="notifications-outline"
+          label="Notification"
+          onPress={() => router.push("/is_signed_in/student_staff/Notification")}
+        />
         <NavItem
           icon="person-outline"
           label="Profile"
