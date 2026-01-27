@@ -8,7 +8,7 @@ const gridItems = [
   {
     title: "Menu",
     subtitle: "View food items",
-    onPress: () => router.push("is_signed_in/Admin/MenuScreen"),
+    onPress: () => router.push("is_signed_in/Admin/AddNewMenu"),
   },
   {
     title: "Delivery Agent",

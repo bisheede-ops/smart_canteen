@@ -167,19 +167,6 @@ export default function OrderHistory() {
                 {order.createdAt.toDate().toLocaleString()}
               </Text>
             )}
-
-            <View style={localStyles.deliveryRow}>
-              <Ionicons
-                name={order.toBeDelivered ? "bicycle-outline" : "restaurant-outline"}
-                size={16}
-                color={ORANGE}
-              />
-              <Text style={localStyles.deliveryText}>
-                {order.toBeDelivered
-                  ? `Delivered to ${order.place}`
-                  : "Pickup at canteen"}
-              </Text>
-            </View>
           </View>
         ))}
       </ScrollView>

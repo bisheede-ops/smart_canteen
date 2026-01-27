@@ -103,4 +103,11 @@ export const styles = StyleSheet.create({
   },
   cancel: { color: "red", fontWeight: "600" },
   save: { color: "#4caf50", fontWeight: "600" },
+  imagePicker: { height: 140, width: "100%", borderWidth: 1, borderColor: "#FF7A00", borderRadius: 12, justifyContent: "center", alignItems: "center", marginVertical: 10, backgroundColor: "#fff", shadowColor: "#000", shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.2, shadowRadius: 4, elevation: 4 },
+  previewImage: { width: "100%", height: "100%", borderRadius: 12 },
+  // placeholder: { justifyContent: "center", alignItems: "center" },
+  // imageText: { color: "#aaa", marginTop: 5, fontSize: 14 },
+  // categoryRow: { flexDirection: "row", justifyContent: "space-around", marginVertical: 10 },
+  // categoryBtn: { paddingVertical: 8, paddingHorizontal: 12, borderRadius: 8, borderWidth: 1, borderColor: "#FF7A00" },
+ 
 });

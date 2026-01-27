@@ -1,24 +1,17 @@
-
 import { useEffect, useMemo, useState } from "react";
 import {
   ActivityIndicator,
   FlatList,
   Text,
   View,
+  StyleSheet,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import Toast from "react-native-toast-message";
-import {
-  collection,
-  doc,
-  getDoc,
-  getDocs,
-  query,
-  where,
-} from "firebase/firestore";
+import { collection, doc, getDoc, getDocs, query, where } from "firebase/firestore";
 import { auth, db } from "../../../firebaseConfig";
 
-import { OrdersStyles as styles, ORANGE } from "@/assets/src/styles/OrdersStyles";
+const ORANGE = "#FF7A00";
 
 const parseOrderDate = (createdAt) => {
   if (!createdAt) return null;
@@ -48,89 +41,73 @@ export default function OrderStatus() {
   const [orders, setOrders] = useState([]);
   const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    fetchUser();
-  }, []);
-
-  useEffect(() => {
-    if (user?.phone) fetchOrders();
-  }, [user]);
+  useEffect(() => { fetchUser(); }, []);
+  useEffect(() => { if (user?.phone) fetchOrders(); }, [user]);
 
   const fetchUser = async () => {
     try {
       const uid = auth.currentUser?.uid;
       if (!uid) return;
-
       const snap = await getDoc(doc(db, "users", uid));
       if (snap.exists()) setUser(snap.data());
-    } catch (err) {
-      console.error(err);
-    }
+    } catch (err) { console.error(err); }
   };
 
   const fetchOrders = async () => {
     try {
       setLoading(true);
-
-      const q = query(
-        collection(db, "food_ordered"),
-        where("phoneno", "==", user.phone)
-      );
-
+      const q = query(collection(db, "food_ordered"), where("phoneno", "==", user.phone));
       const snap = await getDocs(q);
-      setOrders(
-        snap.docs.map(d => ({
-          id: d.id,
-          ...d.data(),
-        }))
-      );
+      setOrders(snap.docs.map(d => ({ id: d.id, ...d.data() })));
     } catch (err) {
       console.error(err);
-      Toast.show({
-        type: "error",
-        text1: "Failed to fetch orders",
-      });
-    } finally {
-      setLoading(false);
-    }
+      Toast.show({ type: "error", text1: "Failed to fetch orders" });
+    } finally { setLoading(false); }
   };
 
   const listData = useMemo(() => {
-    // Only include non-delivered orders
     const notDelivered = orders.filter(o => !o.delivered);
-
     return notDelivered.length
       ? notDelivered.map(o => ({ ...o, type: "order" }))
       : [{ type: "empty", text: "No pending orders" }];
   }, [orders]);
 
   const renderItem = ({ item }) => {
-    if (item.type === "empty") {
-      return <Text style={styles.emptyText}>{item.text}</Text>;
-    }
+    if (item.type === "empty") return <Text style={styles.emptyText}>{item.text}</Text>;
 
     return (
       <View style={styles.card}>
-        <Text style={styles.value}>
-          <Text style={styles.label}>Food:</Text> {item.foodName} × {item.quantity}
-        </Text>
+        <Text style={styles.foodName}>{item.foodName} × {item.quantity}</Text>
 
-        <Text style={styles.value}>
-          <Text style={styles.label}>Ordered At:</Text> {formatOrderDate(item.createdAt)}
-        </Text>
+        <View style={styles.row}>
+          <Text style={styles.label}>Ordered At: </Text>
+          <Text style={styles.value}>{formatOrderDate(item.createdAt)}</Text>
+        </View>
 
-        <Text style={styles.value}>
-          <Text style={styles.label}>Price:</Text> ₹{item.totalPrice}
-        </Text>
+        <View style={styles.row}>
+          <Text style={styles.label}>Price: </Text>
+          <Text style={styles.value}>₹{item.totalPrice}</Text>
+        </View>
 
-        <Text style={styles.value}>
-          <Text style={styles.label}>Delivery Agent:</Text> {item.deliveryAgentName || "Not Assigned"}
-        </Text>
+        {item.toBeDelivered ? (
+          <>
+            <View style={styles.row}>
+              <Text style={styles.label}>Delivery Agent: </Text>
+              <Text style={styles.value}>{item.deliveryAgentName || "Not Assigned"}</Text>
+            </View>
 
-        {item.deliveryAgentName && (
-          <Text style={styles.status}>
-            Status: {item.delivery_status || "Not Picked up"}
-          </Text>
+            {item.deliveryAgentName && (
+              <View style={styles.statusBox}>
+                <Text style={styles.statusText}>
+                  Status: {item.delivery_status || "Not Picked up"}
+                </Text>
+              </View>
+            )}
+          </>
+        ) : (
+          <View style={styles.pickupRow}>
+            <Text style={styles.pickupText}>Pickup at canteen</Text>
+          </View>
         )}
       </View>
     );
@@ -141,17 +118,15 @@ export default function OrderStatus() {
       <Text style={styles.title}>My Pending Orders</Text>
 
       {loading ? (
-        <ActivityIndicator size="large" color={ORANGE} />
+        <ActivityIndicator size="large" color={ORANGE} style={{ marginTop: 40 }} />
       ) : (
         <FlatList
           data={listData}
-          keyExtractor={(item, index) =>
-            item.id ? item.id : `${item.type}-${index}`
-          }
+          keyExtractor={(item, index) => item.id ? item.id : `${item.type}-${index}`}
           renderItem={renderItem}
           refreshing={loading}
           onRefresh={fetchOrders}
-          contentContainerStyle={{ paddingBottom: 120 }}
+          contentContainerStyle={{ paddingBottom: 120, paddingHorizontal: 16, paddingTop: 10 }}
         />
       )}
 
@@ -159,3 +134,82 @@ export default function OrderStatus() {
     </SafeAreaView>
   );
 }
+
+const styles = StyleSheet.create({
+  container: { flex: 1, backgroundColor: "#FFF9F2" },
+
+  title: {
+    fontSize: 26,
+    fontWeight: "700",
+    color: ORANGE,
+    textAlign: "center",
+    marginVertical: 18,
+  },
+
+  emptyText: {
+    textAlign: "center",
+    color: "#999",
+    fontSize: 18,
+    marginTop: 50,
+  },
+
+  card: {
+    backgroundColor: "#fff",
+    borderRadius: 16,
+    padding: 18,
+    marginVertical: 10,
+    shadowColor: "#000",
+    shadowOpacity: 0.05,
+    shadowRadius: 5,
+    shadowOffset: { width: 0, height: 2 },
+    elevation: 2,
+  },
+
+  foodName: {
+    fontSize: 20,
+    fontWeight: "600",
+    marginBottom: 10,
+    color: "#333",
+  },
+
+  row: {
+    flexDirection: "row",
+    marginBottom: 6,
+  },
+
+  label: {
+    fontWeight: "600",
+    color: "#555",
+    fontSize: 16,
+  },
+
+  value: {
+    color: "#333",
+    fontSize: 16,
+  },
+
+  statusBox: {
+    marginTop: 10,
+    backgroundColor: "#FFF3E0",
+    paddingVertical: 8,
+    paddingHorizontal: 14,
+    borderRadius: 14,
+    alignSelf: "flex-start",
+  },
+
+  statusText: {
+    color: ORANGE,
+    fontWeight: "700",
+    fontSize: 16,
+  },
+
+  pickupRow: {
+    marginTop: 10,
+  },
+
+  pickupText: {
+    fontSize: 16,
+    fontWeight: "600",
+    color: ORANGE,
+  },
+});
