@@ -37,6 +37,7 @@ export const HomeStyles = StyleSheet.create({
     columnGap: 16,
     marginBottom: 30,
     
+    
   },
   actionCard: {
     width: "47%",
@@ -45,6 +46,7 @@ export const HomeStyles = StyleSheet.create({
     borderRadius: 14,
     alignItems: "center",
     elevation: 3,
+    
    
   },
   actionText: {
@@ -52,6 +54,7 @@ export const HomeStyles = StyleSheet.create({
     fontSize: 14,
     fontWeight: "600",
     color: "#333",
+    textAlign: "center",
   },
   section: {
     marginBottom: 20,

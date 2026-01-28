@@ -61,15 +61,15 @@ export default function HomeScreen() {
               onPress={() => router.push("/is_signed_in/student_staff/ShowMenu")}
             />
             <ActionCard
-              icon="receipt-outline"
+              icon="time-outline"
               label="Order Status"
               onPress={() => router.push("/is_signed_in/student_staff/OrderStatus")}
             />
           </View>
           <View style={styles.actions}>
           <ActionCard
-            icon="sparkles-outline"
-            label="Special food"
+            icon="cube-outline"
+            label="Weekly Subscription"
             onPress={() =>
               router.push("/is_signed_in/student_staff/SpecialFood")
             }
