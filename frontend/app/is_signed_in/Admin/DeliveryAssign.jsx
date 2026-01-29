@@ -29,44 +29,55 @@ export default function DeliveryAssign() {
   }, []);
 
   const fetchData = async () => {
-    try {
-      setLoading(true);
+  try {
+    setLoading(true);
 
-      const ordersSnap = await getDocs(collection(db, "food_ordered"));
-      const fetchedOrders = ordersSnap.docs.map((d) => ({ id: d.id, ...d.data() }));
-      setOrders(fetchedOrders);
+    const ordersSnap = await getDocs(collection(db, "food_ordered"));
+    const fetchedOrders = ordersSnap.docs.map((d) => ({ id: d.id, ...d.data() }));
+    setOrders(fetchedOrders);
 
-      const agentsSnap = await getDocs(
-        query(collection(db, "delivery_agents"), where("status", "==", "active"))
-      );
+    const agentsSnap = await getDocs(
+      query(collection(db, "delivery_agents"), where("status", "==", "active"))
+    );
 
-      const orderCount = {};
-      const distMap = {};
-      const zoneMap = {};
+    const orderCount = {};
+    const distMap = {};
+    const zoneMap = {};
+    const busyByStatus = {};
 
-      fetchedOrders.forEach((o) => {
-        if (!o.deliveryAgentId || o.delivered) return;
+    fetchedOrders.forEach((o) => {
+      if (!o.deliveryAgentId) return;
+
+      // Count active orders
+      if (!o.delivered) {
         orderCount[o.deliveryAgentId] = (orderCount[o.deliveryAgentId] || 0) + 1;
         distMap[o.deliveryAgentId] ??= [];
         zoneMap[o.deliveryAgentId] ??= [];
         distMap[o.deliveryAgentId].push(getDistance(o.place));
         zoneMap[o.deliveryAgentId].push(getZone(o.place));
-      });
+      }
 
-      setAgents(
-        agentsSnap.docs.map((d) => ({
-          uid: d.id,
-          displayName: d.data().name,
-          activeOrders: orderCount[d.id] || 0,
-          engaged: (orderCount[d.id] || 0) >= MAX_ORDERS_PER_AGENT,
-          distances: distMap[d.id] || [],
-          zones: zoneMap[d.id] || [],
-        }))
-      );
-    } finally {
-      setLoading(false);
-    }
-  };
+      // Check if agent should be busy by order status
+      if (o.delivery_status && o.delivery_status !== "not picked up" && o.delivery_status !== "delivered") {
+        busyByStatus[o.deliveryAgentId] = true;
+      }
+    });
+
+    setAgents(
+      agentsSnap.docs.map((d) => ({
+        uid: d.id,
+        displayName: d.data().name,
+        activeOrders: orderCount[d.id] || 0,
+        distances: distMap[d.id] || [],
+        zones: zoneMap[d.id] || [],
+        engaged:
+          busyByStatus[d.id] || (orderCount[d.id] || 0) >= MAX_ORDERS_PER_AGENT,
+      }))
+    );
+  } finally {
+    setLoading(false);
+  }
+};
 
   const listData = useMemo(() => {
     const assign = orders.filter((o) => o.toBeDelivered && !o.deliveryAgentId);
@@ -92,14 +103,26 @@ export default function DeliveryAssign() {
         <Text><Text style={styles.bold}>Food:</Text> {item.foodName} x {item.quantity}</Text>
         <Text><Text style={styles.bold}>Place:</Text> {item.place}</Text>
 
-        {item.deliveryAgentId && !item.delivered && (
-          <View >
-            <Text><Text style={styles.bold}>Delivery by:</Text> {item.deliveryAgentName}</Text>
-            <TouchableOpacity style={styles.deassignButton} onPress={() => deassignAgent(item).then(fetchData)}>
-              <Text style={styles.deassignText}>Deassign</Text>
-            </TouchableOpacity>
-          </View>
-        )}
+       {item.deliveryAgentId && !item.delivered && (
+  <View>
+    <Text><Text style={styles.bold}>Delivery by:</Text> {item.deliveryAgentName}</Text>
+
+    {item.delivery_status === "not picked up" ? (
+      <TouchableOpacity
+        style={styles.deassignButton}
+        onPress={() => deassignAgent(item).then(fetchData)}
+      >
+        <Text style={styles.deassignText}>Deassign</Text>
+      </TouchableOpacity>
+    ) : (
+      <View style={styles.statusContainer}>
+        <Text style={styles.statusText}>
+          Status: {item.delivery_status}
+        </Text>
+      </View>
+    )}
+  </View>
+)}
 
         {!item.deliveryAgentId && (
           <View style={styles.agentsRow}>

@@ -25,7 +25,7 @@ import {
 import { auth, db } from "../../../firebaseConfig";
 import { Ionicons } from "@expo/vector-icons";
 
-const DELIVERY_STATUSES = ["Picked up", "On my way", "Near your location"];
+const DELIVERY_STATUSES = ["not picked up","Picked up", "On my way", "Near your location"];
 
 // Safe date parsing
 const parseOrderDate = (createdAt) => {

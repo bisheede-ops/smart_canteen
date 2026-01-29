@@ -42,7 +42,7 @@ const PLACES = [
   "Nila Hostel",
   "Kabani Hostel",
   "Staff quarters near LH",
-  "Staff quarters near admninistrtive block",
+  "Staff quarters near administrative block"
 ];
 
 /* =========================
@@ -245,7 +245,8 @@ export default function OrderPage() {
                   maxHeight: 180,
                 }}
               >
-                <ScrollView showsVerticalScrollIndicator={false}>
+                <ScrollView showsVerticalScrollIndicator={false}
+                nestedScrollEnabled>
                   {PLACES.map((item) => (
                     <TouchableOpacity
                       key={item}
