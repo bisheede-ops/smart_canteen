@@ -15,6 +15,7 @@ import {
   smartAssignAll,
   getDistance,
   getZone,
+  MAX_ORDERS_PER_AGENT,
 } from "../../../components/AssignHelpers";
 const INACTIVE = "#DDD";
 export default function DeliveryAssign() {
@@ -57,7 +58,7 @@ export default function DeliveryAssign() {
           uid: d.id,
           displayName: d.data().name,
           activeOrders: orderCount[d.id] || 0,
-          engaged: (orderCount[d.id] || 0) >= 4,
+          engaged: (orderCount[d.id] || 0) >= MAX_ORDERS_PER_AGENT,
           distances: distMap[d.id] || [],
           zones: zoneMap[d.id] || [],
         }))

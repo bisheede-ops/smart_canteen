@@ -5,7 +5,8 @@ const INACTIVE = "#888";
 
 export const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: "#FFF7ED" },
-  content: { flex: 1, padding: 20 },
+  content: { flex: 1, padding: 20,paddingTop:0 },
+  headercontent: { padding: 20 ,paddingBottom:0},
   title: { fontSize: 22, fontWeight: "bold", marginBottom: 15 },
   label: { fontSize: 13, color: "#555", marginBottom: 4 },
   input: {
