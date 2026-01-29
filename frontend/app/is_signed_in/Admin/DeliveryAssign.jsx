@@ -58,7 +58,7 @@ export default function DeliveryAssign() {
       }
 
       // Check if agent should be busy by order status
-      if (o.delivery_status && o.delivery_status !== "not picked up" && o.delivery_status !== "delivered") {
+      if (o.delivery_status && o.delivery_status !== "not picked up" && o.delivery_status !== "Delivered") {
         busyByStatus[o.deliveryAgentId] = true;
       }
     });
