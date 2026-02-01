@@ -147,7 +147,7 @@ export default function OrderHistory() {
       {loading ? (
         <ActivityIndicator size="large" color={ORANGE} />
       ) : orders.length === 0 ? (
-        <Text style={styles.emptyText}>No assigned orders</Text>
+        <Text style={styles.emptyText}>No delivered orders</Text>
       ) : (
         <FlatList
           data={orders}

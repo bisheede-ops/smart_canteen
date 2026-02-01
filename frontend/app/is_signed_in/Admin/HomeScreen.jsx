@@ -1,7 +1,7 @@
 
 import { Ionicons } from "@expo/vector-icons";
 import { router } from "expo-router";
-import { StyleSheet, Text, TouchableOpacity, View } from "react-native";
+import { StyleSheet, Text, TouchableOpacity, View,ScrollView} from "react-native";
 
 /* ---------- MAIN DASHBOARD ITEMS ---------- */
 const gridItems = [
@@ -37,7 +37,7 @@ export default function Index() {
   };
 
   return (
-    <View style={styles.container}>
+    <ScrollView style={styles.container}>
       {/* ---------- HEADER ---------- */}
       <View style={styles.header}>
         <Text style={styles.appName}>SmartCanteen</Text>
@@ -62,7 +62,8 @@ export default function Index() {
           </TouchableOpacity>
         ))}
       </View>
-    </View>
+      <View style={{ paddingBottom: 50 }} />
+    </ScrollView>
   );
 }
 

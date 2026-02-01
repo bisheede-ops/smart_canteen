@@ -121,7 +121,7 @@ export default function SpecialFoodList() {
             {item.eventName}
           </Text>
           <Text>Coordinator: {item.coordinatorName}</Text>
-          <Text>Date: {item.date}</Text>
+          <Text>Date: {item.schedule?.[0]?.date || "No date"}</Text>
 
           <Text
             style={{
