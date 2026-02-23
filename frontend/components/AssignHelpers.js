@@ -3,7 +3,7 @@ import { doc, updateDoc, increment } from "firebase/firestore";
 import Toast from "react-native-toast-message";
 import { db } from "../firebaseConfig";
 
-export const MAX_ORDERS_PER_AGENT = 4;
+export const MAX_ORDERS_PER_AGENT = 6;
 
 /* -------------------- DISTANCES & ZONES -------------------- */
 export const PLACES = [

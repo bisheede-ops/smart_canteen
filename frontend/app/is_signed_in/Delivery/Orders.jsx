@@ -25,7 +25,12 @@ import {
 import { auth, db } from "../../../firebaseConfig";
 import { Ionicons } from "@expo/vector-icons";
 
-const DELIVERY_STATUSES = ["not picked up","Picked up", "On my way", "Near your location"];
+const DELIVERY_STATUSES = [
+  "not picked up",
+  "Picked up",
+  "On my way",
+  "Near your location",
+];
 
 // Safe date parsing
 const parseOrderDate = (createdAt) => {
@@ -33,7 +38,6 @@ const parseOrderDate = (createdAt) => {
 
   try {
     if (createdAt?.seconds) {
-      // Firestore timestamp
       return new Date(createdAt.seconds * 1000);
     }
 
@@ -71,6 +75,7 @@ export default function DeliveryOrders() {
   const [loading, setLoading] = useState(true);
   const [statusModalVisible, setStatusModalVisible] = useState(false);
   const [selectedOrderId, setSelectedOrderId] = useState(null);
+  const [selectedCategory, setSelectedCategory] = useState("not picked up");
 
   const agentUid = auth.currentUser?.uid;
 
@@ -148,6 +153,11 @@ export default function DeliveryOrders() {
     }
   };
 
+  const filteredOrders = orders.filter((order) => {
+    const status = order.delivery_status ?? "not picked up";
+    return status === selectedCategory;
+  });
+
   const renderItem = ({ item }) => (
     <View style={styles.card}>
       <View style={styles.row}>
@@ -178,12 +188,12 @@ export default function DeliveryOrders() {
       </View>
 
       <Text style={styles.status}>
-        Status: {item.delivery_status || "Not updated"}
+        Status: {item.delivery_status || "not picked up"}
       </Text>
 
       <View style={styles.btncontainer}>
         <TouchableOpacity
-          style={styles.button}
+          style={styles.button2}
           onPress={() => {
             setSelectedOrderId(item.id);
             setStatusModalVisible(true);
@@ -208,13 +218,32 @@ export default function DeliveryOrders() {
     <SafeAreaView style={styles.container}>
       <Text style={styles.title}>Orders to Deliver</Text>
 
+      <View style={styles.tabs}>
+        {DELIVERY_STATUSES.map((cat) => (
+          <TouchableOpacity
+            key={cat}
+            style={[styles.tab, selectedCategory === cat && styles.activeTab]}
+            onPress={() => setSelectedCategory(cat)}
+          >
+            <Text
+              style={[
+                styles.tabText,
+                selectedCategory === cat && styles.activeTabText,
+              ]}
+            >
+              {cat}
+            </Text>
+          </TouchableOpacity>
+        ))}
+      </View>
+
       {loading ? (
         <ActivityIndicator size="large" color={ORANGE} />
-      ) : orders.length === 0 ? (
-        <Text style={styles.emptyText}>No assigned orders</Text>
+      ) : filteredOrders.length === 0 ? (
+        <Text style={styles.emptyText}>No orders in this category</Text>
       ) : (
         <FlatList
-          data={orders}
+          data={filteredOrders}
           keyExtractor={(item) => item.id}
           renderItem={renderItem}
           refreshing={loading}

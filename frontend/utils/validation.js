@@ -24,12 +24,14 @@ export const isOnlyNumber = (value) => {
 export const hasMinLength = (value, length) => {
   return value && value.length >= length;
 };
-export const validateNumber = (name) => {
-  if (!isNotEmpty(name)) return "Name cannot be empty";
-  if (!isOnlyNumber(name)) return "Should contain only number";
+
+
+export const validateNumber = (value) => {
+  if (!isNotEmpty(value)) return "Name cannot be empty";
+  if (!isOnlyNumber(value)) return "Should contain only number";
+  if (Number(value) === 0) return "Quantity must be greater than 0";
   return null;
 };
-
 
 export const validateName = (name) => {
   if (!isNotEmpty(name)) return "Name cannot be empty";

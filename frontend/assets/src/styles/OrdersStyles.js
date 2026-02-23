@@ -72,6 +72,16 @@ export const OrdersStyles = StyleSheet.create({
     gap: 6,
   },
 
+    button2: {
+    flex: 1,
+    flexDirection: "row",
+    justifyContent: "center",
+    alignItems: "center",
+    paddingVertical: 12,
+    backgroundColor: "green",
+    borderRadius: 8,
+    gap: 6,
+  },
   buttonText: {
     color: "#fff",
     fontWeight: "bold",
@@ -125,5 +135,33 @@ value: {
   fontSize: 22,
   color: "#222",
 },
+tabs: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    justifyContent: "space-between",
+    marginBottom: 10,
+  },
+
+  tab: {
+    width: "48%",          // half width (with spacing)
+    paddingVertical: 10,
+    paddingHorizontal: 4,
+    borderRadius: 10,
+    backgroundColor: "#FFE1C2",
+    alignItems: "center",
+    marginBottom: 8,       // space between rows
+  },
+
+  tabText: {
+    color: ORANGE,
+    fontWeight: "600",
+      fontSize: 17,
+  },
+
+  activeTabText: {
+    color: "#000",
+  },
 
 });
+
+ 
