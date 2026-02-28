@@ -1055,7 +1055,6 @@ export default function SpecialFoodRequest() {
           onChangeText={setQuantity}
         />
         {errors.quantity && <Text style={styles.error}>{errors.quantity}</Text>}
-cd 
         <TextInput
           style={styles.textArea}
           placeholder="Description"
@@ -1063,28 +1062,6 @@ cd
           value={description}
           onChangeText={setDescription}
         />
-
-        {/* <View style={styles.picker}>
-          <Picker selectedValue={delivery} onValueChange={setDelivery}>
-            <Picker.Item label="Delivery - No" value="No" />
-            <Picker.Item label="Delivery - Yes" value="Yes" />
-          </Picker>
-        </View>
-       
-        {delivery === "Yes" && (
-          <>
-            <TextInput
-              style={styles.textArea}
-              placeholder="Enter delivery location (Building / Block / Landmark)"
-              value={deliveryLocation}
-              onChangeText={setDeliveryLocation}
-              multiline
-            />
-            {errors.deliveryLocation && (
-              <Text style={styles.error}>{errors.deliveryLocation}</Text>
-            )}
-          </>
-        )} */}
 
         <TouchableOpacity style={styles.submitBtn} onPress={handleSubmit}>
           <Text style={styles.submitText}>Submit Request</Text>
