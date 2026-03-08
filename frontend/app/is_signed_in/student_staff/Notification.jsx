@@ -45,16 +45,21 @@ export default function Notifications() {
             borderRadius: 8,
           }}
         >
-          <Text style={{ fontWeight: "bold" }}>{item.title}</Text>
-          <Text>{item.message}</Text>
-          <Text style={{ color: "gray", marginTop: 5 }}>
-            Status: {item.status.toUpperCase()}
-          </Text>
+        <Text style={{ fontWeight: "bold" }}>{item.title}</Text>
+        <Text>{item.message}</Text>
+        <Text style={{ color: "gray", marginTop: 5 }}>
+          Status: {(item.status || "").toUpperCase()}
+        </Text>
         </View>
       )}
     />
   );
 }
+
+
+
+
+
 // import { collection, getDocs, orderBy, query, where } from "firebase/firestore";
 // import { useEffect, useState } from "react";
 // import { FlatList, Text, View } from "react-native";

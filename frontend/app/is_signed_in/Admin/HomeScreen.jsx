@@ -1,7 +1,9 @@
 
+
+
 import { Ionicons } from "@expo/vector-icons";
 import { router } from "expo-router";
-import { StyleSheet, Text, TouchableOpacity, View,ScrollView} from "react-native";
+import { StyleSheet, Text, TouchableOpacity, View } from "react-native";
 
 /* ---------- MAIN DASHBOARD ITEMS ---------- */
 const gridItems = [
@@ -16,9 +18,13 @@ const gridItems = [
     onPress: () => router.push("is_signed_in/Admin/AddDeliveryAgent"),
   },
   { title: "Emergency Meal", subtitle: "Instant food" },
-  { title: "Special Food", subtitle: "Today's special", onPress: () => router.push("/is_signed_in/Admin/SpecialFood"), },
+  {
+    title: "Special Food",
+    subtitle: "Today's special",
+    onPress: () => router.push("/is_signed_in/Admin/SpecialFood"),
+  },
   { title: "Subscription", subtitle: "Weekly plan" },
-  { title: "Orders", subtitle: "Delivered Orders",onPress: () => router.push("/is_signed_in/Admin/DeliveredOrder"), },
+  { title: "Token", subtitle: "Generate token" },
   {
     title: "Assign Details",
     subtitle: "Pass details to delivery agent",
@@ -32,12 +38,11 @@ const gridItems = [
 
 export default function Index() {
   const handleLogout = () => {
-    // Later you can add Firebase signOut here
     router.push("is_signed_in/Admin/ProfileScreen");
   };
 
   return (
-    <ScrollView style={styles.container}>
+    <View style={styles.container}>
       {/* ---------- HEADER ---------- */}
       <View style={styles.header}>
         <Text style={styles.appName}>SmartCanteen</Text>
@@ -62,8 +67,16 @@ export default function Index() {
           </TouchableOpacity>
         ))}
       </View>
-      <View style={{ paddingBottom: 50 }} />
-    </ScrollView>
+
+      {/* ---------- ADD TOTAL TOKEN BUTTON ---------- */}
+      <TouchableOpacity
+        style={styles.bottomButton}
+        activeOpacity={0.9}
+        onPress={() => router.push("/is_signed_in/Admin/TotalToken")}
+      >
+        <Text style={styles.bottomButtonText}>Add Total Token Count</Text>
+      </TouchableOpacity>
+    </View>
   );
 }
 
@@ -73,7 +86,7 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: "#FFF6ED",
     padding: 20,
-    marginTop:20,
+    marginTop: 20,
   },
 
   /* HEADER */
@@ -116,11 +129,6 @@ const styles = StyleSheet.create({
     elevation: 5,
   },
 
-  centerWrapper: {
-    alignItems: "center",
-    marginTop: 10,
-  },
-
   cardTitle: {
     fontSize: 17,
     fontWeight: "700",
@@ -130,5 +138,20 @@ const styles = StyleSheet.create({
   cardSubtitle: {
     fontSize: 13,
     color: "#666",
+  },
+
+  /* BOTTOM BUTTON */
+  bottomButton: {
+    marginTop: 10,
+    backgroundColor: "#FF7A00",
+    paddingVertical: 16,
+    borderRadius: 16,
+    alignItems: "center",
+  },
+
+  bottomButtonText: {
+    color: "#FFFFFF",
+    fontSize: 16,
+    fontWeight: "700",
   },
 });

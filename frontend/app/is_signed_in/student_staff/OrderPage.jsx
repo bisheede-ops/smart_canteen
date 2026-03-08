@@ -1,41 +1,15 @@
 
 // import React, { useState, useEffect } from "react";
-// import { Alert, ScrollView } from "react-native";
-// import {
-//   View,
-//   Text,
-//   TextInput,
-//   TouchableOpacity,
-// } from "react-native";
-
+// import { Alert, ScrollView, View, Text, TextInput, TouchableOpacity } from "react-native";
 // import { SafeAreaView } from "react-native-safe-area-context";
 // import { Ionicons } from "@expo/vector-icons";
-// import {
-//   collection,
-//   addDoc,
-//   doc,
-//   getDoc,
-// } from "firebase/firestore";
-
+// import { collection, addDoc, doc, getDoc } from "firebase/firestore";
 // import { useRouter, useLocalSearchParams } from "expo-router";
 // import Toast from "react-native-toast-message";
 // import { db, auth } from "../../../firebaseConfig";
+// import { validateFoodName, validateNumber, validateName } from "../../../utils/validation";
+// import { styles, ORANGE, INACTIVE } from "@/assets/src/styles/OrderPageStyles.js";
 
-// import {
-//   validateFoodName,
-//   validateNumber,
-//   validateName,
-// } from "../../../utils/validation";
-
-// import {
-//   styles,
-//   ORANGE,
-//   INACTIVE,
-// } from "@/assets/src/styles/OrderPageStyles.js";
-
-// /* =========================
-//    DELIVERY PLACES
-// ========================= */
 // const PLACES = [
 //   "Cheruthoni",
 //   "Painavu",
@@ -46,9 +20,6 @@
 //   "Staff quarters near administrative block"
 // ];
 
-// /* =========================
-//    ORDER PAGE
-// ========================= */
 // export default function OrderPage() {
 //   const router = useRouter();
 //   const params = useLocalSearchParams();
@@ -71,18 +42,13 @@
 //   }, [params]);
 
 //   useEffect(() => {
-//     if (quantity && price) {
-//       setTotalPrice(Number(quantity) * price);
-//     } else {
-//       setTotalPrice(0);
-//     }
+//     setTotalPrice(quantity && price ? Number(quantity) * price : 0);
 //   }, [quantity, price]);
 
 //   useEffect(() => {
 //     const fetchUserDetails = async () => {
 //       const uid = auth.currentUser?.uid;
 //       if (!uid) return;
-
 //       try {
 //         const snap = await getDoc(doc(db, "users", uid));
 //         if (snap.exists()) {
@@ -93,7 +59,6 @@
 //         console.error(err);
 //       }
 //     };
-
 //     fetchUserDetails();
 //   }, []);
 
@@ -136,47 +101,24 @@
 //       }
 //     }
 
-//     try {
-//       await addDoc(collection(db, "food_ordered"), {
-//         userId: auth.currentUser.uid,
-//         username,
-//         phoneno,
-//         foodName,
-//         quantity: Number(quantity),
-//         price,
-//         totalPrice,
-//         place: toBeDelivered ? place : "",
-//         toBeDelivered,
-//         deliveryBy: "",
-//         createdAt: new Date(),
-//       });
-
-//       Toast.show({ type: "success", text1: "Order Placed" });
-//       setTimeout(() => {
-//         router.push("/is_signed_in/student_staff/HomeScreen");
-//         console.log("ordered");
-//       }, 100);
-//       setQuantity("");
-//       setPlace("");
-//       setShowDropdown(false);
-//       setToBeDelivered(false);
-//       setTotalPrice(0);
-      
-//     } catch (err) {
-//       Toast.show({ type: "error", text1: "Order Failed" });
-//     }
-
 //     setLoading(false);
+
+//     // route to payment screen with details
+//     router.push({
+//       pathname: "/is_signed_in/student_staff/PaymentScreen",
+//       params: {
+//         amount: totalPrice,
+//         foodName,
+//         quantity,
+//         place: toBeDelivered ? place : "",
+//         toBeDelivered: toBeDelivered ? "yes" : "no"
+//       }
+//     });
 //   };
 
 //   return (
 //     <SafeAreaView style={styles.container}>
-//       {/* SCROLLABLE FORM AREA */}
-//       <ScrollView
-//         style={styles.content}
-//         contentContainerStyle={{ paddingBottom: 120 }}
-//         showsVerticalScrollIndicator={false}
-//       >
+//       <ScrollView style={styles.content} contentContainerStyle={{ paddingBottom: 120 }}>
 //         <Text style={styles.title}>Food Order</Text>
 
 //         <Text style={styles.label}>Logged in as</Text>
@@ -186,13 +128,7 @@
 //         </View>
 
 //         <Input label="Food Name" value={foodName} editable={false} />
-
-//         <Input
-//           label="Quantity"
-//           value={quantity}
-//           onChange={setQuantity}
-//           keyboard="number-pad"
-//         />
+//         <Input label="Quantity" value={quantity} onChange={setQuantity} keyboard="number-pad" />
 
 //         {totalPrice > 0 && (
 //           <View style={styles.priceContainer}>
@@ -205,11 +141,7 @@
 //           style={styles.toggleRow}
 //           onPress={() => setToBeDelivered(!toBeDelivered)}
 //         >
-//           <Ionicons
-//             name={toBeDelivered ? "checkbox" : "square-outline"}
-//             size={22}
-//             color={ORANGE}
-//           />
+//           <Ionicons name={toBeDelivered ? "checkbox" : "square-outline"} size={22} color={ORANGE} />
 //           <Text style={styles.toggleText}>To be delivered</Text>
 //         </TouchableOpacity>
 
@@ -218,48 +150,20 @@
 //             <Text style={styles.label}>Delivery Place</Text>
 
 //             <TouchableOpacity
-//               style={[
-//                 styles.input,
-//                 {
-//                   flexDirection: "row",
-//                   justifyContent: "space-between",
-//                   alignItems: "center",
-//                 },
-//               ]}
+//               style={[styles.input, { flexDirection: "row", justifyContent: "space-between", alignItems: "center" }]}
 //               onPress={() => setShowDropdown(!showDropdown)}
 //             >
-//               <Text style={{ color: place ? "#000" : "#999" }}>
-//                 {place || "Select place"}
-//               </Text>
-
-//               <Ionicons
-//                 name={showDropdown ? "chevron-up" : "chevron-down"}
-//                 size={20}
-//                 color={ORANGE}
-//               />
+//               <Text style={{ color: place ? "#000" : "#999" }}>{place || "Select place"}</Text>
+//               <Ionicons name={showDropdown ? "chevron-up" : "chevron-down"} size={20} color={ORANGE} />
 //             </TouchableOpacity>
 
 //             {showDropdown && (
-//               <View
-//                 style={{
-//                   borderWidth: 1,
-//                   borderColor: "#ddd",
-//                   borderRadius: 8,
-//                   marginTop: 6,
-//                   backgroundColor: "#fff",
-//                   maxHeight: 180,
-//                 }}
-//               >
-//                 <ScrollView showsVerticalScrollIndicator={false}
-//                 nestedScrollEnabled>
+//               <View style={{ borderWidth: 1, borderColor: "#ddd", borderRadius: 8, marginTop: 6, backgroundColor: "#fff", maxHeight: 180 }}>
+//                 <ScrollView showsVerticalScrollIndicator={false} nestedScrollEnabled>
 //                   {PLACES.map((item) => (
 //                     <TouchableOpacity
 //                       key={item}
-//                       style={{
-//                         padding: 12,
-//                         borderBottomWidth: 1,
-//                         borderBottomColor: "#eee",
-//                       }}
+//                       style={{ padding: 12, borderBottomWidth: 1, borderBottomColor: "#eee" }}
 //                       onPress={() => {
 //                         setPlace(item);
 //                         setShowDropdown(false);
@@ -276,38 +180,20 @@
 
 //         <TouchableOpacity style={styles.button} onPress={placeOrder}>
 //           <Ionicons name="cart-outline" size={20} color="#fff" />
-//           <Text style={styles.buttonText}>
-//             {loading ? "ORDERING..." : "PLACE ORDER"}
-//           </Text>
+//           <Text style={styles.buttonText}>{loading ? "ORDERING..." : "PLACE ORDER"}</Text>
 //         </TouchableOpacity>
 //       </ScrollView>
 
-//       {/* FIXED NAVBAR */}
 //       <View style={styles.navbar}>
-//         <NavItem
-//           icon="home"
-//           label="Home"
-//           onPress={() => router.push("/is_signed_in/student_staff/HomeScreen")}
-//         />
-//         <NavItem
-//           icon="restaurant-outline"
-//           label="Menu"
-//           onPress={() => router.push("/is_signed_in/student_staff/ShowMenu")}
-//         />
+//         <NavItem icon="home" label="Home" onPress={() => router.push("/is_signed_in/student_staff/HomeScreen")} />
+//         <NavItem icon="restaurant-outline" label="Menu" onPress={() => router.push("/is_signed_in/student_staff/ShowMenu")} />
 //         <NavItem icon="receipt-outline" label="Orders" active />
-//         <NavItem
-//           icon="person-outline"
-//           label="Profile"
-//           onPress={() => router.push("/is_signed_in/student_staff/ProfileScreen")}
-//         />
+//         <NavItem icon="person-outline" label="Profile" onPress={() => router.push("/is_signed_in/student_staff/ProfileScreen")} />
 //       </View>
 //     </SafeAreaView>
 //   );
 // }
 
-// /* =========================
-//    INPUT COMPONENT
-// ========================= */
 // function Input({ label, value, onChange, keyboard, editable = true }) {
 //   return (
 //     <>
@@ -317,43 +203,25 @@
 //         onChangeText={onChange}
 //         keyboardType={keyboard}
 //         editable={editable}
-//         style={[
-//           styles.input,
-//           !editable && { backgroundColor: "#F3F3F3" },
-//         ]}
+//         style={[styles.input, !editable && { backgroundColor: "#F3F3F3" }]}
 //       />
 //     </>
 //   );
 // }
 
-// /* =========================
-//    NAV ITEM COMPONENT
-// ========================= */
 // function NavItem({ icon, label, onPress, active }) {
 //   return (
 //     <TouchableOpacity style={styles.navItem} onPress={onPress}>
-//       <Ionicons
-//         name={icon}
-//         size={24}
-//         color={active ? ORANGE : INACTIVE}
-//       />
-//       <Text
-//         style={[
-//           styles.navText,
-//           active && { color: ORANGE, fontWeight: "bold" },
-//         ]}
-//       >
-//         {label}
-//       </Text>
+//       <Ionicons name={icon} size={24} color={active ? ORANGE : INACTIVE} />
+//       <Text style={[styles.navText, active && { color: ORANGE, fontWeight: "bold" }]}>{label}</Text>
 //     </TouchableOpacity>
 //   );
 // }
-
 import React, { useState, useEffect } from "react";
 import { Alert, ScrollView, View, Text, TextInput, TouchableOpacity } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Ionicons } from "@expo/vector-icons";
-import { collection, addDoc, doc, getDoc } from "firebase/firestore";
+import { collection, doc, getDoc, getDocs } from "firebase/firestore";
 import { useRouter, useLocalSearchParams } from "expo-router";
 import Toast from "react-native-toast-message";
 import { db, auth } from "../../../firebaseConfig";
@@ -399,8 +267,10 @@ export default function OrderPage() {
     const fetchUserDetails = async () => {
       const uid = auth.currentUser?.uid;
       if (!uid) return;
+
       try {
         const snap = await getDoc(doc(db, "users", uid));
+
         if (snap.exists()) {
           setUsername(snap.data().username || snap.data().name || "unknown");
           setPhoneno(snap.data().phone || "unknown");
@@ -409,10 +279,12 @@ export default function OrderPage() {
         console.error(err);
       }
     };
+
     fetchUserDetails();
   }, []);
 
   const placeOrder = async () => {
+
     if (loading) return;
     setLoading(true);
 
@@ -437,6 +309,7 @@ export default function OrderPage() {
     }
 
     if (toBeDelivered) {
+
       if (!place) {
         Alert.alert("Error", "Delivery place required");
         setLoading(false);
@@ -444,6 +317,7 @@ export default function OrderPage() {
       }
 
       const placeError = validateName(place);
+
       if (placeError) {
         Alert.alert("Error", placeError);
         setLoading(false);
@@ -451,9 +325,64 @@ export default function OrderPage() {
       }
     }
 
+    try {
+
+      const itemName = foodName.toLowerCase();
+      const qty = Number(quantity);
+
+      const snapshot = await getDocs(collection(db, "token"));
+
+      let matchedToken = null;
+
+      snapshot.forEach((doc) => {
+
+        const data = doc.data();
+        const mealName = data.meal ? data.meal.toLowerCase() : "";
+
+        if (mealName === itemName) {
+          matchedToken = data;
+        }
+
+      });
+
+      if (matchedToken) {
+
+        const remaining = matchedToken.remainingToken;
+
+        if (remaining === 0) {
+
+          Toast.show({
+            type: "error",
+            text1: "Item finished"
+          });
+
+          setLoading(false);
+          return;
+        }
+
+        if (qty > remaining) {
+
+          Toast.show({
+            type: "error",
+            text1: `Only ${remaining} tokens remaining`
+          });
+
+          setLoading(false);
+          return;
+        }
+
+      }
+
+    } catch (err) {
+
+      console.error(err);
+      setLoading(false);
+      return;
+
+    }
+
     setLoading(false);
 
-    // route to payment screen with details
     router.push({
       pathname: "/is_signed_in/student_staff/PaymentScreen",
       params: {
@@ -464,106 +393,222 @@ export default function OrderPage() {
         toBeDelivered: toBeDelivered ? "yes" : "no"
       }
     });
+
   };
 
   return (
     <SafeAreaView style={styles.container}>
       <ScrollView style={styles.content} contentContainerStyle={{ paddingBottom: 120 }}>
+
         <Text style={styles.title}>Food Order</Text>
 
         <Text style={styles.label}>Logged in as</Text>
+
         <View style={styles.userBox}>
           <Ionicons name="person-outline" size={18} color={ORANGE} />
           <Text style={styles.usernameText}>{username}</Text>
         </View>
 
         <Input label="Food Name" value={foodName} editable={false} />
-        <Input label="Quantity" value={quantity} onChange={setQuantity} keyboard="number-pad" />
+
+        <Input
+          label="Quantity"
+          value={quantity}
+          onChange={setQuantity}
+          keyboard="number-pad"
+        />
 
         {totalPrice > 0 && (
+
           <View style={styles.priceContainer}>
             <Text style={styles.priceTitle}>TOTAL AMOUNT</Text>
             <Text style={styles.priceText}>₹ {totalPrice}</Text>
           </View>
+
         )}
 
         <TouchableOpacity
           style={styles.toggleRow}
           onPress={() => setToBeDelivered(!toBeDelivered)}
         >
-          <Ionicons name={toBeDelivered ? "checkbox" : "square-outline"} size={22} color={ORANGE} />
+
+          <Ionicons
+            name={toBeDelivered ? "checkbox" : "square-outline"}
+            size={22}
+            color={ORANGE}
+          />
+
           <Text style={styles.toggleText}>To be delivered</Text>
+
         </TouchableOpacity>
 
         {toBeDelivered && (
+
           <View style={{ marginTop: 12 }}>
+
             <Text style={styles.label}>Delivery Place</Text>
 
             <TouchableOpacity
-              style={[styles.input, { flexDirection: "row", justifyContent: "space-between", alignItems: "center" }]}
+              style={[
+                styles.input,
+                {
+                  flexDirection: "row",
+                  justifyContent: "space-between",
+                  alignItems: "center"
+                }
+              ]}
               onPress={() => setShowDropdown(!showDropdown)}
             >
-              <Text style={{ color: place ? "#000" : "#999" }}>{place || "Select place"}</Text>
-              <Ionicons name={showDropdown ? "chevron-up" : "chevron-down"} size={20} color={ORANGE} />
+
+              <Text style={{ color: place ? "#000" : "#999" }}>
+                {place || "Select place"}
+              </Text>
+
+              <Ionicons
+                name={showDropdown ? "chevron-up" : "chevron-down"}
+                size={20}
+                color={ORANGE}
+              />
+
             </TouchableOpacity>
 
             {showDropdown && (
-              <View style={{ borderWidth: 1, borderColor: "#ddd", borderRadius: 8, marginTop: 6, backgroundColor: "#fff", maxHeight: 180 }}>
-                <ScrollView showsVerticalScrollIndicator={false} nestedScrollEnabled>
+
+              <View
+                style={{
+                  borderWidth: 1,
+                  borderColor: "#ddd",
+                  borderRadius: 8,
+                  marginTop: 6,
+                  backgroundColor: "#fff",
+                  maxHeight: 180
+                }}
+              >
+
+                <ScrollView
+                  showsVerticalScrollIndicator={false}
+                  nestedScrollEnabled
+                >
+
                   {PLACES.map((item) => (
+
                     <TouchableOpacity
                       key={item}
-                      style={{ padding: 12, borderBottomWidth: 1, borderBottomColor: "#eee" }}
+                      style={{
+                        padding: 12,
+                        borderBottomWidth: 1,
+                        borderBottomColor: "#eee"
+                      }}
                       onPress={() => {
+
                         setPlace(item);
                         setShowDropdown(false);
+
                       }}
                     >
+
                       <Text>{item}</Text>
+
                     </TouchableOpacity>
+
                   ))}
+
                 </ScrollView>
+
               </View>
+
             )}
+
           </View>
+
         )}
 
         <TouchableOpacity style={styles.button} onPress={placeOrder}>
+
           <Ionicons name="cart-outline" size={20} color="#fff" />
-          <Text style={styles.buttonText}>{loading ? "ORDERING..." : "PLACE ORDER"}</Text>
+
+          <Text style={styles.buttonText}>
+            {loading ? "ORDERING..." : "PLACE ORDER"}
+          </Text>
+
         </TouchableOpacity>
+
       </ScrollView>
 
       <View style={styles.navbar}>
-        <NavItem icon="home" label="Home" onPress={() => router.push("/is_signed_in/student_staff/HomeScreen")} />
-        <NavItem icon="restaurant-outline" label="Menu" onPress={() => router.push("/is_signed_in/student_staff/ShowMenu")} />
-        <NavItem icon="receipt-outline" label="Orders" active />
-        <NavItem icon="person-outline" label="Profile" onPress={() => router.push("/is_signed_in/student_staff/ProfileScreen")} />
+
+        <NavItem
+          icon="home"
+          label="Home"
+          onPress={() => router.push("/is_signed_in/student_staff/HomeScreen")}
+        />
+
+        <NavItem
+          icon="restaurant-outline"
+          label="Menu"
+          onPress={() => router.push("/is_signed_in/student_staff/ShowMenu")}
+        />
+
+        <NavItem
+          icon="receipt-outline"
+          label="Orders"
+          active
+        />
+
+        <NavItem
+          icon="person-outline"
+          label="Profile"
+          onPress={() => router.push("/is_signed_in/student_staff/ProfileScreen")}
+        />
+
       </View>
+
     </SafeAreaView>
   );
 }
 
 function Input({ label, value, onChange, keyboard, editable = true }) {
+
   return (
     <>
       <Text style={styles.label}>{label}</Text>
+
       <TextInput
         value={value}
         onChangeText={onChange}
         keyboardType={keyboard}
         editable={editable}
-        style={[styles.input, !editable && { backgroundColor: "#F3F3F3" }]}
+        style={[
+          styles.input,
+          !editable && { backgroundColor: "#F3F3F3" }
+        ]}
       />
     </>
   );
+
 }
 
 function NavItem({ icon, label, onPress, active }) {
+
   return (
     <TouchableOpacity style={styles.navItem} onPress={onPress}>
-      <Ionicons name={icon} size={24} color={active ? ORANGE : INACTIVE} />
-      <Text style={[styles.navText, active && { color: ORANGE, fontWeight: "bold" }]}>{label}</Text>
+
+      <Ionicons
+        name={icon}
+        size={24}
+        color={active ? ORANGE : INACTIVE}
+      />
+
+      <Text
+        style={[
+          styles.navText,
+          active && { color: ORANGE, fontWeight: "bold" }
+        ]}
+      >
+        {label}
+      </Text>
+
     </TouchableOpacity>
   );
+
 }
