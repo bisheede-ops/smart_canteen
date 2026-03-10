@@ -1,4 +1,3 @@
-
 import { useEffect, useState, useCallback } from "react";
 import {
   ActivityIndicator, FlatList, Text,
@@ -14,9 +13,9 @@ import { useRouter } from "expo-router";
 const ORANGE = "#FF7A00";
 
 const STATUS_CONFIG = {
-  delivered:  { color: "#6366f1", bg: "#eef2ff", icon: "bicycle-outline",        label: "Delivered"  },
-  picked_up:  { color: "#10b981", bg: "#ecfdf5", icon: "walk-outline",           label: "Picked Up"  },
-  cancelled:  { color: "#ef4444", bg: "#fef2f2", icon: "close-circle-outline",   label: "Cancelled"  },
+  confirmed: { color: "#3b82f6", bg: "#eff6ff", icon: "checkmark-circle-outline", label: "Confirmed" },
+  preparing: { color: "#f59e0b", bg: "#fffbeb", icon: "restaurant-outline",        label: "Preparing" },
+  ready:     { color: "#10b981", bg: "#ecfdf5", icon: "bag-check-outline",         label: "Ready"     },
 };
 
 const formatDate = (ts) => {
@@ -29,51 +28,51 @@ const formatDate = (ts) => {
   });
 };
 
-export default function OrderHistory() {
+export default function MyOrders() {
   const router = useRouter();
   const [orders, setOrders]   = useState([]);
   const [loading, setLoading] = useState(true);
 
-  const fetchHistory = useCallback(async () => {
+  const fetchOrders = useCallback(async () => {
     const uid = auth.currentUser?.uid;
     if (!uid) {
-      console.warn("[OrderHistory] No authenticated user.");
+      console.warn("[MyOrders] No authenticated user.");
       return;
     }
 
-    console.log(`[OrderHistory] Fetching completed orders for uid: ${uid}`);
+    console.log(`[MyOrders] Fetching active orders for uid: ${uid}`);
     setLoading(true);
 
     try {
       const q = query(
         collection(db, "orders"),
         where("userId", "==", uid),
-        where("status", "in", ["delivered", "picked_up", "cancelled"]),
+        where("status", "in", ["confirmed", "preparing", "ready"]),
         orderBy("createdAt", "desc")
       );
       const snap = await getDocs(q);
       const list = snap.docs.map(d => ({ id: d.id, ...d.data() }));
-      console.log(`[OrderHistory] Fetched ${list.length} completed orders.`);
+      console.log(`[MyOrders] Fetched ${list.length} active orders.`);
       setOrders(list);
     } catch (err) {
-      console.error("[OrderHistory] ERROR fetching order history:", err);
-      Toast.show({ type: "error", text1: "Failed to fetch order history" });
+      console.error("[MyOrders] ERROR fetching orders:", err);
+      Toast.show({ type: "error", text1: "Failed to fetch orders" });
     } finally {
       setLoading(false);
     }
   }, []);
 
   useEffect(() => {
-    fetchHistory();
+    fetchOrders();
   }, []);
 
   const renderOrder = ({ item }) => {
-    const status     = STATUS_CONFIG[item.status] || STATUS_CONFIG.delivered;
+    const status     = STATUS_CONFIG[item.status] || STATUS_CONFIG.confirmed;
     const itemInfo   = item.items?.[0];
     const isDelivery = item.deliveryDetails?.toBeDelivered;
 
     return (
-      <View style={[styles.card, item.status === "cancelled" && styles.cardCancelled]}>
+      <View style={styles.card}>
 
         {/* Header */}
         <View style={styles.cardHeader}>
@@ -113,33 +112,30 @@ export default function OrderHistory() {
             name={isDelivery ? "bicycle-outline" : "walk-outline"}
             size={15} color="#aaa"
           />
-          <Text style={styles.infoLabel}>{isDelivery ? "Delivered to" : "Pickup"}</Text>
+          <Text style={styles.infoLabel}>{isDelivery ? "Deliver to" : "Pickup"}</Text>
           <Text style={styles.infoValue}>
             {isDelivery ? item.deliveryDetails?.place : "Self Pickup"}
           </Text>
         </View>
 
-        {/* Completion footer */}
-        <View style={[
-          styles.footerBanner,
-          item.status === "cancelled"
-            ? styles.footerBannerCancelled
-            : styles.footerBannerSuccess
-        ]}>
-          <Ionicons
-            name={item.status === "cancelled" ? "close-circle-outline" : "checkmark-done-outline"}
-            size={14}
-            color={item.status === "cancelled" ? "#ef4444" : "#10b981"}
-          />
-          <Text style={[
-            styles.footerBannerText,
-            item.status === "cancelled" && { color: "#ef4444" }
-          ]}>
-            {item.status === "delivered"  && "Delivered successfully"}
-            {item.status === "picked_up"  && "Picked up from canteen"}
-            {item.status === "cancelled"  && "Order was cancelled"}
-          </Text>
-        </View>
+        {/* Delivery agent if assigned */}
+        {isDelivery && item.deliveryDetails?.agentName ? (
+          <View style={styles.infoRow}>
+            <Ionicons name="person-outline" size={15} color="#aaa" />
+            <Text style={styles.infoLabel}>Agent</Text>
+            <Text style={styles.infoValue}>{item.deliveryDetails.agentName}</Text>
+          </View>
+        ) : null}
+
+        {/* Ready banner */}
+        {item.status === "ready" && (
+          <View style={styles.readyBanner}>
+            <Ionicons name="notifications-outline" size={15} color="#10b981" />
+            <Text style={styles.readyBannerText}>
+              {isDelivery ? "Out for delivery!" : "Ready for pickup at canteen!"}
+            </Text>
+          </View>
+        )}
 
       </View>
     );
@@ -151,24 +147,37 @@ export default function OrderHistory() {
       {/* Header */}
       <View style={styles.header}>
         <TouchableOpacity onPress={() => {
-          console.log("[OrderHistory] User tapped back.");
+          console.log("[MyOrders] User tapped back.");
           router.back();
         }}>
           <Ionicons name="arrow-back" size={24} color={ORANGE} />
         </TouchableOpacity>
-        <Text style={styles.title}>Order History</Text>
+        <Text style={styles.title}>My Orders</Text>
         <TouchableOpacity onPress={() => {
-          console.log("[OrderHistory] User triggered manual refresh.");
-          fetchHistory();
+          console.log("[MyOrders] User triggered manual refresh.");
+          fetchOrders();
         }}>
           <Ionicons name="refresh-outline" size={24} color={ORANGE} />
         </TouchableOpacity>
       </View>
 
+      {/* Order History link */}
+      <TouchableOpacity
+        style={styles.historyLink}
+        onPress={() => {
+          console.log("[MyOrders] Navigating to OrderHistory.");
+          router.push("/is_signed_in/student_staff/OrderHistory");
+        }}
+      >
+        <Ionicons name="time-outline" size={15} color={ORANGE} />
+        <Text style={styles.historyLinkText}>View Order History</Text>
+        <Ionicons name="chevron-forward" size={15} color={ORANGE} />
+      </TouchableOpacity>
+
       {/* Order count */}
       {!loading && (
         <Text style={styles.countText}>
-          {orders.length} {orders.length === 1 ? "order" : "orders"} in history
+          {orders.length} active {orders.length === 1 ? "order" : "orders"}
         </Text>
       )}
 
@@ -176,7 +185,7 @@ export default function OrderHistory() {
       {loading ? (
         <View style={styles.centered}>
           <ActivityIndicator size="large" color={ORANGE} />
-          <Text style={styles.loadingText}>Loading history...</Text>
+          <Text style={styles.loadingText}>Loading orders...</Text>
         </View>
       ) : (
         <FlatList
@@ -184,13 +193,13 @@ export default function OrderHistory() {
           keyExtractor={item => item.id}
           renderItem={renderOrder}
           refreshing={loading}
-          onRefresh={fetchHistory}
+          onRefresh={fetchOrders}
           contentContainerStyle={{ paddingBottom: 40, paddingHorizontal: 16, paddingTop: 6 }}
           ListEmptyComponent={
             <View style={styles.centered}>
-              <Ionicons name="time-outline" size={60} color="#FFD2A6" />
-              <Text style={styles.emptyTitle}>No history yet</Text>
-              <Text style={styles.emptyText}>Completed orders will appear here</Text>
+              <Ionicons name="checkmark-done-circle-outline" size={60} color="#FFD2A6" />
+              <Text style={styles.emptyTitle}>All caught up!</Text>
+              <Text style={styles.emptyText}>No active orders right now</Text>
             </View>
           }
         />
@@ -209,6 +218,15 @@ const styles = StyleSheet.create({
   },
   title: { fontSize: 20, fontWeight: "700", color: ORANGE },
 
+  historyLink: {
+    flexDirection: "row", alignItems: "center", gap: 6,
+    marginHorizontal: 16, marginBottom: 10,
+    backgroundColor: "#fff8f2", borderRadius: 10,
+    paddingHorizontal: 14, paddingVertical: 10,
+    borderWidth: 1, borderColor: "#FFE1C2",
+  },
+  historyLinkText: { flex: 1, fontSize: 13, color: ORANGE, fontWeight: "600" },
+
   countText: { fontSize: 12, color: "#bbb", marginLeft: 18, marginBottom: 4 },
 
   card: {
@@ -216,8 +234,6 @@ const styles = StyleSheet.create({
     shadowColor: "#000", shadowOpacity: 0.05,
     shadowRadius: 8, shadowOffset: { width: 0, height: 2 }, elevation: 2,
   },
-  cardCancelled: { opacity: 0.75 },
-
   cardHeader: {
     flexDirection: "row", justifyContent: "space-between",
     alignItems: "flex-start", marginBottom: 10,
@@ -238,13 +254,12 @@ const styles = StyleSheet.create({
   infoValue: { fontSize: 13, fontWeight: "600", color: "#1a1a1a", maxWidth: "55%", textAlign: "right" },
   amountText: { color: ORANGE, fontWeight: "700" },
 
-  footerBanner: {
+  readyBanner: {
     flexDirection: "row", alignItems: "center", gap: 6,
-    borderRadius: 10, paddingHorizontal: 10, paddingVertical: 7, marginTop: 8,
+    backgroundColor: "#ecfdf5", borderRadius: 10,
+    paddingHorizontal: 10, paddingVertical: 7, marginTop: 8,
   },
-  footerBannerSuccess:   { backgroundColor: "#ecfdf5" },
-  footerBannerCancelled: { backgroundColor: "#fef2f2" },
-  footerBannerText: { fontSize: 12, color: "#10b981", fontWeight: "600" },
+  readyBannerText: { fontSize: 12, color: "#10b981", fontWeight: "600" },
 
   centered: { alignItems: "center", justifyContent: "center", marginTop: 60 },
   loadingText: { color: "#aaa", marginTop: 10, fontSize: 13 },

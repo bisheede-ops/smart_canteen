@@ -1,399 +1,355 @@
 
-// import React, { useState, useEffect } from "react";
-// import { View, Text, TouchableOpacity, ActivityIndicator } from "react-native";
-// import { useStripe } from "@stripe/stripe-react-native";
-// import { useLocalSearchParams, useRouter } from "expo-router";
-// import Toast from "react-native-toast-message";
-// import { addDoc, collection } from "firebase/firestore";
-// import { db, auth } from "../../../firebaseConfig";
 
-// export default function PaymentScreen() {
-//   const { initPaymentSheet, presentPaymentSheet } = useStripe();
-//   const params = useLocalSearchParams();
-//   const router = useRouter();
-
-//   const amount = Number(params?.amount || 0);
-//   const foodName = params?.foodName || "";
-//   const quantity = params?.quantity || "";
-//   const place = params?.place || "";
-//   const toBeDelivered = params?.toBeDelivered === "yes";
-
-//   const [loading, setLoading] = useState(false);
-
-//   useEffect(() => {
-//     console.log("PaymentScreen mounted, amount:", amount);
-
-//     if (!amount) {
-//       console.log("Invalid amount");
-//       Toast.show({ type: "error", text1: "Invalid amount" });
-//     }
-//   }, [amount]);
-
-//   async function handlePayment() {
-//     if (loading) {
-//       console.log("Payment already in progress");
-//       return;
-//     }
-
-//     setLoading(true);
-//     console.log("Payment button clicked");
-
-//     try {
-//       console.log("Requesting payment intent...");
-
-//       const response = await fetch("http://192.168.137.1:3000/create-payment-intent", {
-//         method: "POST",
-//         headers: { "Content-Type": "application/json" },
-//         body: JSON.stringify({ amount: amount * 100 })
-//       });
-
-//       console.log("Backend response status:", response.status);
-
-//       const data = await response.json();
-//       console.log("Response data:", data);
-
-//       const { clientSecret } = data;
-//       if (!clientSecret) {
-//         console.log("No clientSecret received");
-//         Toast.show({ type: "error", text1: "Payment initialization failed" });
-//         return;
-//       }
-
-//       console.log("Initializing payment sheet");
-//       await initPaymentSheet({
-//         paymentIntentClientSecret: clientSecret,
-//         merchantDisplayName: "Smart Canteen"
-//       });
-
-//       console.log("Presenting payment sheet");
-//       const { error } = await presentPaymentSheet();
-
-//       if (error) {
-//         console.log("Payment failed", error);
-//         Toast.show({ type: "error", text1: "Payment failed" });
-//       } else {
-//         console.log("Payment success — storing record");
-
-//         await addDoc(collection(db, "food_ordered"), {
-//           userId: auth.currentUser.uid,
-//           foodName,
-//           quantity: Number(quantity),
-//           totalPrice: amount,
-//           place,
-//           toBeDelivered,
-//           paymentStatus: "paid",
-//           createdAt: new Date()
-//         });
-
-//         console.log("Order details saved in Firestore");
-
-//         await addDoc(collection(db, "payments"), {
-//           userId: auth.currentUser.uid,
-//           foodName,
-//           quantity: Number(quantity),
-//           totalPrice: amount,
-//           place,
-//           toBeDelivered,
-//           paymentStatus: "paid",
-//           createdAt: new Date()
-//         });
-
-//         console.log("Payment record saved in Firestore");
-
-//         router.replace("/is_signed_in/student_staff/OrderSuccess");
-//       }
-//     } catch (e) {
-//       console.error("Payment error:", e);
-//       Toast.show({ type: "error", text1: "Payment error" });
-//     } finally {
-//       setLoading(false);
-//       console.log("Payment process finished");
-//     }
-//   }
-
-//   return (
-//     <View
-//       style={{
-//         flex: 1,
-//         padding: 20,
-//         backgroundColor: "#FFF4EC",
-//         justifyContent: "center",
-//       }}
-//     >
-//       <View
-//         style={{
-//           backgroundColor: "#fff",
-//           borderRadius: 12,
-//           padding: 20,
-//           elevation: 2,
-//         }}
-//       >
-//         <Text style={{ fontSize: 18, fontWeight: "700", marginBottom: 12 }}>
-//           Order Confirmation
-//         </Text>
-
-//         <Text style={{ fontSize: 15, marginBottom: 6 }}>
-//           Food: {foodName || "N/A"}
-//         </Text>
-
-//         <Text style={{ fontSize: 15, marginBottom: 6 }}>
-//           Quantity: {quantity || "0"}
-//         </Text>
-
-//         <Text style={{ fontSize: 16, fontWeight: "600", marginBottom: 16 }}>
-//           Total Amount: ₹{amount}
-//         </Text>
-
-//         <TouchableOpacity
-//           onPress={handlePayment}
-//           disabled={loading}
-//           style={{
-//             backgroundColor: loading ? "#ccc" : "#f97316",
-//             paddingVertical: 14,
-//             borderRadius: 12,
-//             alignItems: "center",
-//             marginBottom: 12,
-//           }}
-//         >
-//           {loading ? (
-//             <ActivityIndicator color="#fff" />
-//           ) : (
-//             <Text style={{ color: "#fff", fontWeight: "bold" }}>Pay Now</Text>
-//           )}
-//         </TouchableOpacity>
-
-//         <TouchableOpacity
-//           onPress={() => {
-//             console.log("Payment canceled, going back");
-//             router.back();
-//           }}
-//           style={{
-//             backgroundColor: "#eee",
-//             paddingVertical: 12,
-//             borderRadius: 12,
-//             alignItems: "center",
-//           }}
-//         >
-//           <Text style={{ color: "#333", fontWeight: "600" }}>Cancel</Text>
-//         </TouchableOpacity>
-//       </View>
-//     </View>
-//   );
-// }
-
-import React, { useState, useEffect } from "react";
-import { View, Text, TouchableOpacity, ActivityIndicator } from "react-native";
+import React, { useEffect, useState } from "react";
+import {
+  View, Text, TouchableOpacity,
+  ActivityIndicator, StyleSheet,
+} from "react-native";
 import { useStripe } from "@stripe/stripe-react-native";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import Toast from "react-native-toast-message";
-import {
-  addDoc,
-  collection,
-  doc,
-  getDoc,
-  updateDoc
-} from "firebase/firestore";
+import { collection, doc, getDoc, runTransaction, serverTimestamp } from "firebase/firestore";
+import { Ionicons } from "@expo/vector-icons";
 import { db, auth } from "../../../firebaseConfig";
 
-export default function PaymentScreen() {
+const ORANGE = "#f97316";
 
+export default function PaymentScreen() {
   const { initPaymentSheet, presentPaymentSheet } = useStripe();
   const params = useLocalSearchParams();
   const router = useRouter();
 
-  const amount = Number(params?.amount || 0);
-  const foodName = params?.foodName || "";
-  const quantity = Number(params?.quantity || 0);
-  const place = params?.place || "";
-  const toBeDelivered = params?.toBeDelivered === "yes";
+  const amount        = Number(params?.amount       || 0);
+  const foodName      = params?.foodName            || "";
+  const quantity      = Number(params?.quantity     || 0);
+  const place         = params?.place               || "";
+  const toBeDelivered = params?.toBeDelivered       === "yes";
+  const itemId        = params?.itemId              || foodName.toLowerCase();
+  const pricePerItem  = Number(params?.pricePerItem || 0);
 
-  const [loading, setLoading] = useState(false);
-  const [remainingToken, setRemainingToken] = useState(null);
+  const [loading, setLoading]   = useState(false);
+  const [username, setUsername] = useState("");
 
-  const mealId = foodName.toLowerCase();
-
+  /* ---------- FETCH USERNAME ---------- */
   useEffect(() => {
-
-    const fetchToken = async () => {
-      try {
-
-        const tokenRef = doc(db, "token", mealId);
-        const tokenSnap = await getDoc(tokenRef);
-
-        if (tokenSnap.exists()) {
-          const data = tokenSnap.data();
-          setRemainingToken(data.remainingToken);
-        }
-
-      } catch (e) {
-        console.log("Token fetch error:", e);
-      }
-    };
-
-    fetchToken();
+    console.log(`[PaymentScreen] Screen mounted. foodName: ${foodName}, quantity: ${quantity}, amount: ₹${amount}, itemId: ${itemId}`);
 
     if (!amount) {
+      console.warn("[PaymentScreen] Amount is 0 or missing.");
       Toast.show({ type: "error", text1: "Invalid amount" });
     }
 
-  }, []);
-
-  async function handlePayment() {
-
-    if (loading) return;
-
-    try {
-
-      if (remainingToken !== null && quantity > remainingToken) {
-        Toast.show({
-          type: "error",
-          text1: "Not enough tokens available"
-        });
+    const fetchUsername = async () => {
+      const uid = auth.currentUser?.uid;
+      if (!uid) {
+        console.warn("[PaymentScreen] No authenticated user.");
         return;
       }
-
-      setLoading(true);
-
-      const response = await fetch(
-        "http://172.31.31.132:3000/create-payment-intent",
-        {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ amount: amount * 100 })
+      console.log(`[PaymentScreen] Fetching username for uid: ${uid}`);
+      try {
+        const snap = await getDoc(doc(db, "users", uid));
+        if (snap.exists()) {
+          const name = snap.data().username || snap.data().name || "Unknown";
+          console.log(`[PaymentScreen] Username fetched: ${name}`);
+          setUsername(name);
+        } else {
+          console.warn("[PaymentScreen] User document not found in Firestore.");
         }
-      );
+      } catch (e) {
+        console.error("[PaymentScreen] ERROR fetching username:", e);
+      }
+    };
+
+    fetchUsername();
+  }, []);
+
+  /* ---------- HANDLE PAYMENT ---------- */
+  async function handlePayment() {
+    if (loading) {
+      console.log("[PaymentScreen] handlePayment called while already loading, ignoring.");
+      return;
+    }
+
+    console.log("[PaymentScreen] handlePayment triggered.");
+    setLoading(true);
+
+    try {
+      // ── 1. Create Payment Intent ──────────────────────────────────
+      console.log(`[PaymentScreen] Calling backend. Amount: ₹${amount} (${amount * 100} paise)`);
+      const API_URL = process.env.EXPO_PUBLIC_API_URL;
+      const response = await fetch(`${API_URL}/create-payment-intent`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ amount: amount * 100 }),
+      });
 
       const data = await response.json();
       const { clientSecret } = data;
 
       if (!clientSecret) {
+        console.error("[PaymentScreen] No clientSecret returned from backend.", data);
         Toast.show({ type: "error", text1: "Payment initialization failed" });
         return;
       }
+      console.log("[PaymentScreen] clientSecret received successfully.");
 
-      await initPaymentSheet({
+      // ── 2. Init Payment Sheet ─────────────────────────────────────
+      console.log("[PaymentScreen] Initializing Stripe payment sheet...");
+      const { error: initError } = await initPaymentSheet({
         paymentIntentClientSecret: clientSecret,
-        merchantDisplayName: "Smart Canteen"
+        merchantDisplayName: "Smart Canteen",
       });
 
-      const { error } = await presentPaymentSheet();
+      if (initError) {
+        console.error("[PaymentScreen] ERROR initializing payment sheet:", initError);
+        Toast.show({ type: "error", text1: "Payment setup failed" });
+        return;
+      }
+      console.log("[PaymentScreen] Payment sheet initialized successfully.");
 
-      if (error) {
-        Toast.show({ type: "error", text1: "Payment failed" });
-      } else {
+      // ── 3. Present Sheet to User ──────────────────────────────────
+      console.log("[PaymentScreen] Presenting Stripe payment sheet to user...");
+      const { error: paymentError } = await presentPaymentSheet();
 
-        await addDoc(collection(db, "food_ordered"), {
-          userId: auth.currentUser.uid,
-          foodName,
-          quantity,
-          totalPrice: amount,
-          place,
-          toBeDelivered,
-          paymentStatus: "paid",
-          createdAt: new Date()
-        });
+      if (paymentError) {
+        console.error("[PaymentScreen] Payment sheet error:", paymentError.message);
+        Toast.show({ type: "error", text1: paymentError.message || "Payment failed" });
+        return;
+      }
+      console.log("[PaymentScreen] Payment sheet completed — user paid.");
 
-        await addDoc(collection(db, "payments"), {
-          userId: auth.currentUser.uid,
-          foodName,
-          quantity,
-          totalPrice: amount,
-          place,
-          toBeDelivered,
-          paymentStatus: "paid",
-          createdAt: new Date()
-        });
+      // ── 4. Save order + increment counter + decrement token ───────
+      const user        = auth.currentUser;
+      const orderRef    = doc(collection(db, "orders"));
+      const tokenRef    = doc(db, "token", foodName.toLowerCase());
+      const counterRef  = doc(db, "meta", "orderCounter");
 
-        if (remainingToken !== null) {
+      let resolvedOrderNumber = null;
 
-          const tokenRef = doc(db, "token", mealId);
+      console.log(`[PaymentScreen] Starting Firestore transaction. orderId: ${orderRef.id}`);
 
-          await updateDoc(tokenRef, {
-            remainingToken: remainingToken - quantity,
-            updatedAt: new Date()
-          });
+      await runTransaction(db, async (transaction) => {
 
+        // ── All reads first (Firestore requirement) ─────────────────
+        const counterSnap = await transaction.get(counterRef);
+        const tokenSnap   = await transaction.get(tokenRef);
+
+        // ── Counter check ───────────────────────────────────────────
+        if (!counterSnap.exists()) {
+          console.error("[PaymentScreen] meta/orderCounter document is missing.");
+          throw new Error("ORDER_COUNTER_MISSING");
         }
 
-        router.replace("/is_signed_in/student_staff/OrderSuccess");
-      }
+        const nextOrderNumber = counterSnap.data().lastOrderNumber + 1;
+        console.log(`[PaymentScreen] Next order number: ${nextOrderNumber}`);
+
+        // ── Token check ─────────────────────────────────────────────
+        if (tokenSnap.exists()) {
+          const remaining = tokenSnap.data().remainingToken;
+          console.log(`[PaymentScreen] Token found. Remaining: ${remaining}, Requested: ${quantity}`);
+
+          if (quantity > remaining) {
+            console.warn("[PaymentScreen] Not enough tokens. Aborting transaction.");
+            throw new Error("NOT_ENOUGH_TOKENS");
+          }
+
+          transaction.update(tokenRef, {
+            remainingToken: remaining - quantity,
+            updatedAt: serverTimestamp(),
+          });
+          console.log(`[PaymentScreen] Token decremented: ${remaining} → ${remaining - quantity}`);
+        } else {
+          console.log(`[PaymentScreen] No token doc for "${foodName.toLowerCase()}" — no limit enforced.`);
+        }
+
+        // ── All writes after all reads ──────────────────────────────
+
+        // Increment order counter
+        transaction.update(counterRef, { lastOrderNumber: nextOrderNumber });
+        console.log(`[PaymentScreen] Order counter updated to: ${nextOrderNumber}`);
+
+        // Save order document
+        transaction.set(orderRef, {
+          userId:    user.uid,
+          userName:  username || user.email || "Unknown",
+          userEmail: user.email || "",
+          items: [{
+            itemId,
+            name:     foodName,
+            quantity,
+            price:    pricePerItem,
+            subtotal: amount,
+          }],
+          pricing: {
+            subtotal: amount,
+            tax:      0,
+            discount: 0,
+            total:    amount,
+          },
+          payment: {
+            method: "stripe",
+            status: "paid",
+            paidAt: serverTimestamp(),
+          },
+          deliveryDetails: { place, toBeDelivered },
+          orderNumber: `SC-${new Date().toISOString().slice(0, 10).replace(/-/g, "")}-${nextOrderNumber}`,
+          status:      "confirmed",
+          note:        "",
+          createdAt:   serverTimestamp(),
+          updatedAt:   serverTimestamp(),
+        });
+
+        console.log(`[PaymentScreen] Order set in transaction. orderId: ${orderRef.id}, orderNumber: ${nextOrderNumber}`);
+
+        // Store for use after transaction
+        resolvedOrderNumber = `SC-${new Date().toISOString().slice(0, 10).replace(/-/g, "")}-${nextOrderNumber}`;
+      });
+
+      console.log(`[PaymentScreen] Transaction committed. orderId: ${orderRef.id}, orderNumber: ${resolvedOrderNumber}`);
+
+      // ── 5. Navigate to success ────────────────────────────────────
+      console.log("[PaymentScreen] Navigating to OrderSuccess screen.");
+      router.replace({
+        pathname: "/is_signed_in/student_staff/OrderSuccess",
+        params: {
+          orderNumber:   String(resolvedOrderNumber),
+          orderId:       orderRef.id,
+          foodName,
+          quantity:      String(quantity),
+          amount:        String(amount),
+          toBeDelivered: toBeDelivered ? "yes" : "no",
+          place,
+        },
+      });
 
     } catch (e) {
-      console.error("Payment error:", e);
-      Toast.show({ type: "error", text1: "Payment error" });
+      if (e.message === "NOT_ENOUGH_TOKENS") {
+        console.warn("[PaymentScreen] Transaction aborted: NOT_ENOUGH_TOKENS.");
+        Toast.show({
+          type: "error",
+          text1: "Not enough tokens available",
+          text2: "Someone may have just taken the last slot.",
+        });
+      } else if (e.message === "ORDER_COUNTER_MISSING") {
+        console.error("[PaymentScreen] orderCounter document missing in Firestore.");
+        Toast.show({
+          type: "error",
+          text1: "Order system error",
+          text2: "Please contact support.",
+        });
+      } else {
+        console.error("[PaymentScreen] Unhandled error in handlePayment:", e);
+        Toast.show({ type: "error", text1: "Something went wrong" });
+      }
     } finally {
       setLoading(false);
     }
   }
 
+  /* ---------- RENDER ---------- */
   return (
-    <View
-      style={{
-        flex: 1,
-        padding: 20,
-        backgroundColor: "#FFF4EC",
-        justifyContent: "center",
-      }}
-    >
-      <View
-        style={{
-          backgroundColor: "#fff",
-          borderRadius: 12,
-          padding: 20,
-          elevation: 2,
-        }}
-      >
-        <Text style={{ fontSize: 18, fontWeight: "700", marginBottom: 12 }}>
-          Order Confirmation
-        </Text>
+    <View style={styles.screen}>
+      <View style={styles.card}>
+        <Text style={styles.heading}>Order Summary</Text>
 
-        <Text style={{ fontSize: 15, marginBottom: 6 }}>
-          Food: {foodName || "N/A"}
-        </Text>
+        <View style={styles.row}>
+          <Ionicons name="person-outline" size={16} color="#999" />
+          <Text style={styles.rowLabel}>Ordering as</Text>
+          <Text style={styles.rowValue}>{username || "..."}</Text>
+        </View>
 
-        <Text style={{ fontSize: 15, marginBottom: 6 }}>
-          Quantity: {quantity || "0"}
-        </Text>
+        <View style={styles.divider} />
 
-        <Text style={{ fontSize: 16, fontWeight: "600", marginBottom: 16 }}>
-          Total Amount: ₹{amount}
-        </Text>
+        <View style={styles.row}>
+          <Ionicons name="fast-food-outline" size={16} color="#999" />
+          <Text style={styles.rowLabel}>Item</Text>
+          <Text style={styles.rowValue}>{foodName || "N/A"}</Text>
+        </View>
 
+        <View style={styles.row}>
+          <Ionicons name="layers-outline" size={16} color="#999" />
+          <Text style={styles.rowLabel}>Quantity</Text>
+          <Text style={styles.rowValue}>{quantity}</Text>
+        </View>
+
+        <View style={styles.row}>
+          <Ionicons name="pricetag-outline" size={16} color="#999" />
+          <Text style={styles.rowLabel}>Price per item</Text>
+          <Text style={styles.rowValue}>₹{pricePerItem}</Text>
+        </View>
+
+        <View style={styles.divider} />
+
+        <View style={styles.row}>
+          <Ionicons
+            name={toBeDelivered ? "bicycle-outline" : "walk-outline"}
+            size={16} color="#999"
+          />
+          <Text style={styles.rowLabel}>{toBeDelivered ? "Deliver to" : "Pickup"}</Text>
+          <Text style={styles.rowValue}>{toBeDelivered ? place : "Self Pickup"}</Text>
+        </View>
+
+        <View style={styles.divider} />
+
+        <View style={styles.totalRow}>
+          <Text style={styles.totalLabel}>Total Amount</Text>
+          <Text style={styles.totalValue}>₹{amount}</Text>
+        </View>
+
+        {/* Pay Button */}
         <TouchableOpacity
           onPress={handlePayment}
           disabled={loading}
-          style={{
-            backgroundColor: loading ? "#ccc" : "#f97316",
-            paddingVertical: 14,
-            borderRadius: 12,
-            alignItems: "center",
-            marginBottom: 12,
-          }}
+          style={[styles.payBtn, loading && styles.payBtnDisabled]}
         >
           {loading ? (
             <ActivityIndicator color="#fff" />
           ) : (
-            <Text style={{ color: "#fff", fontWeight: "bold" }}>
-              Pay Now
-            </Text>
+            <>
+              <Ionicons name="lock-closed-outline" size={16} color="#fff" />
+              <Text style={styles.payBtnText}>Pay ₹{amount} Securely</Text>
+            </>
           )}
         </TouchableOpacity>
 
+        {/* Cancel Button */}
         <TouchableOpacity
-          onPress={() => router.back()}
-          style={{
-            backgroundColor: "#eee",
-            paddingVertical: 12,
-            borderRadius: 12,
-            alignItems: "center",
+          onPress={() => {
+            console.log("[PaymentScreen] User cancelled payment, going back.");
+            router.back();
           }}
+          disabled={loading}
+          style={[styles.cancelBtn, loading && { opacity: 0.4 }]}
         >
-          <Text style={{ color: "#333", fontWeight: "600" }}>
-            Cancel
-          </Text>
+          <Text style={styles.cancelBtnText}>Cancel</Text>
         </TouchableOpacity>
 
+        {/* Stripe Badge */}
+        <View style={styles.stripeBadge}>
+          <Ionicons name="shield-checkmark-outline" size={13} color="#aaa" />
+          <Text style={styles.stripeText}>Secured by Stripe</Text>
+        </View>
       </View>
     </View>
   );
 }
+
+const styles = StyleSheet.create({
+  screen:         { flex: 1, backgroundColor: "#FFF4EC", justifyContent: "center", padding: 20 },
+  card:           { backgroundColor: "#fff", borderRadius: 16, padding: 20, elevation: 3, shadowColor: "#f97316", shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.08, shadowRadius: 12 },
+  heading:        { fontSize: 18, fontWeight: "700", color: "#1a1a1a", marginBottom: 16 },
+  row:            { flexDirection: "row", alignItems: "center", marginBottom: 12, gap: 8 },
+  rowLabel:       { flex: 1, fontSize: 14, color: "#888" },
+  rowValue:       { fontSize: 14, fontWeight: "600", color: "#1a1a1a", maxWidth: "55%", textAlign: "right" },
+  divider:        { height: 1, backgroundColor: "#f5f5f5", marginVertical: 8 },
+  totalRow:       { flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginVertical: 8 },
+  totalLabel:     { fontSize: 15, fontWeight: "700", color: "#1a1a1a" },
+  totalValue:     { fontSize: 20, fontWeight: "800", color: ORANGE },
+  payBtn:         { backgroundColor: ORANGE, flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 8, paddingVertical: 14, borderRadius: 12, marginTop: 16, marginBottom: 10, shadowColor: ORANGE, shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.3, shadowRadius: 8, elevation: 5 },
+  payBtnDisabled: { backgroundColor: "#ffb380", elevation: 0 },
+  payBtnText:     { color: "#fff", fontWeight: "700", fontSize: 15 },
+  cancelBtn:      { backgroundColor: "#f5f5f5", paddingVertical: 12, borderRadius: 12, alignItems: "center" },
+  cancelBtnText:  { color: "#555", fontWeight: "600", fontSize: 14 },
+  stripeBadge:    { flexDirection: "row", justifyContent: "center", alignItems: "center", gap: 4, marginTop: 14 },
+  stripeText:     { fontSize: 11, color: "#bbb" },
+});

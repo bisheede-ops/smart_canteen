@@ -1,282 +1,64 @@
 
-// import React, { useState, useEffect } from "react";
-// import { Alert, ScrollView, View, Text, TextInput, TouchableOpacity } from "react-native";
-// import { SafeAreaView } from "react-native-safe-area-context";
-// import { Ionicons } from "@expo/vector-icons";
-// import { collection, addDoc, doc, getDoc } from "firebase/firestore";
-// import { useRouter, useLocalSearchParams } from "expo-router";
-// import Toast from "react-native-toast-message";
-// import { db, auth } from "../../../firebaseConfig";
-// import { validateFoodName, validateNumber, validateName } from "../../../utils/validation";
-// import { styles, ORANGE, INACTIVE } from "@/assets/src/styles/OrderPageStyles.js";
 
-// const PLACES = [
-//   "Cheruthoni",
-//   "Painavu",
-//   "Paremavu",
-//   "Nila Hostel",
-//   "Kabani Hostel",
-//   "Staff quarters near LH",
-//   "Staff quarters near administrative block"
-// ];
-
-// export default function OrderPage() {
-//   const router = useRouter();
-//   const params = useLocalSearchParams();
-
-//   const [username, setUsername] = useState("");
-//   const [phoneno, setPhoneno] = useState("");
-//   const [foodName, setFoodName] = useState("");
-//   const [quantity, setQuantity] = useState("");
-//   const [price, setPrice] = useState(0);
-//   const [totalPrice, setTotalPrice] = useState(0);
-
-//   const [place, setPlace] = useState("");
-//   const [showDropdown, setShowDropdown] = useState(false);
-//   const [toBeDelivered, setToBeDelivered] = useState(false);
-//   const [loading, setLoading] = useState(false);
-
-//   useEffect(() => {
-//     if (params?.name) setFoodName(params.name);
-//     if (params?.price) setPrice(Number(params.price));
-//   }, [params]);
-
-//   useEffect(() => {
-//     setTotalPrice(quantity && price ? Number(quantity) * price : 0);
-//   }, [quantity, price]);
-
-//   useEffect(() => {
-//     const fetchUserDetails = async () => {
-//       const uid = auth.currentUser?.uid;
-//       if (!uid) return;
-//       try {
-//         const snap = await getDoc(doc(db, "users", uid));
-//         if (snap.exists()) {
-//           setUsername(snap.data().username || snap.data().name || "unknown");
-//           setPhoneno(snap.data().phone || "unknown");
-//         }
-//       } catch (err) {
-//         console.error(err);
-//       }
-//     };
-//     fetchUserDetails();
-//   }, []);
-
-//   const placeOrder = async () => {
-//     if (loading) return;
-//     setLoading(true);
-
-//     if (!foodName || !quantity) {
-//       Toast.show({ type: "error", text1: "Missing details" });
-//       setLoading(false);
-//       return;
-//     }
-
-//     const foodError = validateFoodName(foodName);
-//     if (foodError) {
-//       Alert.alert("Error", foodError);
-//       setLoading(false);
-//       return;
-//     }
-
-//     const qtyError = validateNumber(quantity);
-//     if (qtyError) {
-//       Alert.alert("Error", qtyError);
-//       setLoading(false);
-//       return;
-//     }
-
-//     if (toBeDelivered) {
-//       if (!place) {
-//         Alert.alert("Error", "Delivery place required");
-//         setLoading(false);
-//         return;
-//       }
-
-//       const placeError = validateName(place);
-//       if (placeError) {
-//         Alert.alert("Error", placeError);
-//         setLoading(false);
-//         return;
-//       }
-//     }
-
-//     setLoading(false);
-
-//     // route to payment screen with details
-//     router.push({
-//       pathname: "/is_signed_in/student_staff/PaymentScreen",
-//       params: {
-//         amount: totalPrice,
-//         foodName,
-//         quantity,
-//         place: toBeDelivered ? place : "",
-//         toBeDelivered: toBeDelivered ? "yes" : "no"
-//       }
-//     });
-//   };
-
-//   return (
-//     <SafeAreaView style={styles.container}>
-//       <ScrollView style={styles.content} contentContainerStyle={{ paddingBottom: 120 }}>
-//         <Text style={styles.title}>Food Order</Text>
-
-//         <Text style={styles.label}>Logged in as</Text>
-//         <View style={styles.userBox}>
-//           <Ionicons name="person-outline" size={18} color={ORANGE} />
-//           <Text style={styles.usernameText}>{username}</Text>
-//         </View>
-
-//         <Input label="Food Name" value={foodName} editable={false} />
-//         <Input label="Quantity" value={quantity} onChange={setQuantity} keyboard="number-pad" />
-
-//         {totalPrice > 0 && (
-//           <View style={styles.priceContainer}>
-//             <Text style={styles.priceTitle}>TOTAL AMOUNT</Text>
-//             <Text style={styles.priceText}>₹ {totalPrice}</Text>
-//           </View>
-//         )}
-
-//         <TouchableOpacity
-//           style={styles.toggleRow}
-//           onPress={() => setToBeDelivered(!toBeDelivered)}
-//         >
-//           <Ionicons name={toBeDelivered ? "checkbox" : "square-outline"} size={22} color={ORANGE} />
-//           <Text style={styles.toggleText}>To be delivered</Text>
-//         </TouchableOpacity>
-
-//         {toBeDelivered && (
-//           <View style={{ marginTop: 12 }}>
-//             <Text style={styles.label}>Delivery Place</Text>
-
-//             <TouchableOpacity
-//               style={[styles.input, { flexDirection: "row", justifyContent: "space-between", alignItems: "center" }]}
-//               onPress={() => setShowDropdown(!showDropdown)}
-//             >
-//               <Text style={{ color: place ? "#000" : "#999" }}>{place || "Select place"}</Text>
-//               <Ionicons name={showDropdown ? "chevron-up" : "chevron-down"} size={20} color={ORANGE} />
-//             </TouchableOpacity>
-
-//             {showDropdown && (
-//               <View style={{ borderWidth: 1, borderColor: "#ddd", borderRadius: 8, marginTop: 6, backgroundColor: "#fff", maxHeight: 180 }}>
-//                 <ScrollView showsVerticalScrollIndicator={false} nestedScrollEnabled>
-//                   {PLACES.map((item) => (
-//                     <TouchableOpacity
-//                       key={item}
-//                       style={{ padding: 12, borderBottomWidth: 1, borderBottomColor: "#eee" }}
-//                       onPress={() => {
-//                         setPlace(item);
-//                         setShowDropdown(false);
-//                       }}
-//                     >
-//                       <Text>{item}</Text>
-//                     </TouchableOpacity>
-//                   ))}
-//                 </ScrollView>
-//               </View>
-//             )}
-//           </View>
-//         )}
-
-//         <TouchableOpacity style={styles.button} onPress={placeOrder}>
-//           <Ionicons name="cart-outline" size={20} color="#fff" />
-//           <Text style={styles.buttonText}>{loading ? "ORDERING..." : "PLACE ORDER"}</Text>
-//         </TouchableOpacity>
-//       </ScrollView>
-
-//       <View style={styles.navbar}>
-//         <NavItem icon="home" label="Home" onPress={() => router.push("/is_signed_in/student_staff/HomeScreen")} />
-//         <NavItem icon="restaurant-outline" label="Menu" onPress={() => router.push("/is_signed_in/student_staff/ShowMenu")} />
-//         <NavItem icon="receipt-outline" label="Orders" active />
-//         <NavItem icon="person-outline" label="Profile" onPress={() => router.push("/is_signed_in/student_staff/ProfileScreen")} />
-//       </View>
-//     </SafeAreaView>
-//   );
-// }
-
-// function Input({ label, value, onChange, keyboard, editable = true }) {
-//   return (
-//     <>
-//       <Text style={styles.label}>{label}</Text>
-//       <TextInput
-//         value={value}
-//         onChangeText={onChange}
-//         keyboardType={keyboard}
-//         editable={editable}
-//         style={[styles.input, !editable && { backgroundColor: "#F3F3F3" }]}
-//       />
-//     </>
-//   );
-// }
-
-// function NavItem({ icon, label, onPress, active }) {
-//   return (
-//     <TouchableOpacity style={styles.navItem} onPress={onPress}>
-//       <Ionicons name={icon} size={24} color={active ? ORANGE : INACTIVE} />
-//       <Text style={[styles.navText, active && { color: ORANGE, fontWeight: "bold" }]}>{label}</Text>
-//     </TouchableOpacity>
-//   );
-// }
 import React, { useState, useEffect } from "react";
-import { Alert, ScrollView, View, Text, TextInput, TouchableOpacity } from "react-native";
+import {
+  ScrollView, View, Text, TextInput,
+  TouchableOpacity, ActivityIndicator,
+} from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Ionicons } from "@expo/vector-icons";
-import { collection, doc, getDoc, getDocs } from "firebase/firestore";
+import { doc, getDoc } from "firebase/firestore";
 import { useRouter, useLocalSearchParams } from "expo-router";
 import Toast from "react-native-toast-message";
 import { db, auth } from "../../../firebaseConfig";
-import { validateFoodName, validateNumber, validateName } from "../../../utils/validation";
+import { validateNumber } from "../../../utils/validation";
 import { styles, ORANGE, INACTIVE } from "@/assets/src/styles/OrderPageStyles.js";
 
 const PLACES = [
-  "Cheruthoni",
-  "Painavu",
-  "Paremavu",
-  "Nila Hostel",
-  "Kabani Hostel",
+  "Cheruthoni", "Painavu", "Paremavu",
+  "Nila Hostel", "Kabani Hostel",
   "Staff quarters near LH",
-  "Staff quarters near administrative block"
+  "Staff quarters near administrative block",
 ];
 
 export default function OrderPage() {
   const router = useRouter();
   const params = useLocalSearchParams();
 
-  const [username, setUsername] = useState("");
-  const [phoneno, setPhoneno] = useState("");
-  const [foodName, setFoodName] = useState("");
-  const [quantity, setQuantity] = useState("");
-  const [price, setPrice] = useState(0);
-  const [totalPrice, setTotalPrice] = useState(0);
+  const foodName     = params?.name    || "";
+  const price        = Number(params?.price || 0);
+  const itemId       = params?.itemId  || foodName.toLowerCase();
 
-  const [place, setPlace] = useState("");
+  const [username, setUsername]         = useState("");
+  const [quantity, setQuantity]         = useState("");
+  const [place, setPlace]               = useState("");
   const [showDropdown, setShowDropdown] = useState(false);
   const [toBeDelivered, setToBeDelivered] = useState(false);
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading]           = useState(false);
+
+  const totalPrice = quantity && price ? Number(quantity) * price : 0;
 
   useEffect(() => {
-    if (params?.name) setFoodName(params.name);
-    if (params?.price) setPrice(Number(params.price));
-  }, [params]);
+    console.log(`[OrderPage] Screen mounted. Item: "${foodName}", Price: ₹${price}, ItemId: ${itemId}`);
 
-  useEffect(() => {
-    setTotalPrice(quantity && price ? Number(quantity) * price : 0);
-  }, [quantity, price]);
-
-  useEffect(() => {
     const fetchUserDetails = async () => {
       const uid = auth.currentUser?.uid;
-      if (!uid) return;
-
+      if (!uid) {
+        console.warn("[OrderPage] No authenticated user found.");
+        return;
+      }
+      console.log(`[OrderPage] Fetching user details for uid: ${uid}`);
       try {
         const snap = await getDoc(doc(db, "users", uid));
-
         if (snap.exists()) {
-          setUsername(snap.data().username || snap.data().name || "unknown");
-          setPhoneno(snap.data().phone || "unknown");
+          const name = snap.data().username || snap.data().name || "Unknown";
+          console.log(`[OrderPage] User details fetched. Username: ${name}`);
+          setUsername(name);
+        } else {
+          console.warn("[OrderPage] User document does not exist in Firestore.");
         }
       } catch (err) {
-        console.error(err);
+        console.error("[OrderPage] ERROR fetching user details:", err);
       }
     };
 
@@ -284,116 +66,94 @@ export default function OrderPage() {
   }, []);
 
   const placeOrder = async () => {
-
-    if (loading) return;
-    setLoading(true);
-
-    if (!foodName || !quantity) {
-      Toast.show({ type: "error", text1: "Missing details" });
-      setLoading(false);
+    if (loading) {
+      console.log("[OrderPage] placeOrder called while already loading, ignoring.");
       return;
     }
 
-    const foodError = validateFoodName(foodName);
-    if (foodError) {
-      Alert.alert("Error", foodError);
-      setLoading(false);
+    console.log(`[OrderPage] placeOrder triggered. foodName: ${foodName}, quantity: ${quantity}, toBeDelivered: ${toBeDelivered}, place: "${place}"`);
+
+    if (!quantity) {
+      console.warn("[OrderPage] Validation failed: quantity is empty.");
+      Toast.show({ type: "error", text1: "Please enter a quantity" });
       return;
     }
 
     const qtyError = validateNumber(quantity);
     if (qtyError) {
-      Alert.alert("Error", qtyError);
-      setLoading(false);
+      console.warn(`[OrderPage] Validation failed: ${qtyError}`);
+      Toast.show({ type: "error", text1: qtyError });
       return;
     }
 
-    if (toBeDelivered) {
-
-      if (!place) {
-        Alert.alert("Error", "Delivery place required");
-        setLoading(false);
-        return;
-      }
-
-      const placeError = validateName(place);
-
-      if (placeError) {
-        Alert.alert("Error", placeError);
-        setLoading(false);
-        return;
-      }
+    const qty = Number(quantity);
+    if (qty < 1) {
+      console.warn(`[OrderPage] Validation failed: quantity ${qty} is less than 1.`);
+      Toast.show({ type: "error", text1: "Quantity must be at least 1" });
+      return;
     }
 
+    if (toBeDelivered && !place) {
+      console.warn("[OrderPage] Validation failed: delivery selected but no place chosen.");
+      Toast.show({ type: "error", text1: "Please select a delivery place" });
+      return;
+    }
+
+    setLoading(true);
+
     try {
+      console.log(`[OrderPage] Checking token for: "${foodName.toLowerCase()}"`);
+      const tokenRef = doc(db, "token", foodName.toLowerCase());
+      const tokenSnap = await getDoc(tokenRef);
 
-      const itemName = foodName.toLowerCase();
-      const qty = Number(quantity);
-
-      const snapshot = await getDocs(collection(db, "token"));
-
-      let matchedToken = null;
-
-      snapshot.forEach((doc) => {
-
-        const data = doc.data();
-        const mealName = data.meal ? data.meal.toLowerCase() : "";
-
-        if (mealName === itemName) {
-          matchedToken = data;
-        }
-
-      });
-
-      if (matchedToken) {
-
-        const remaining = matchedToken.remainingToken;
+      if (tokenSnap.exists()) {
+        const remaining = tokenSnap.data().remainingToken;
+        console.log(`[OrderPage] Token doc found. Remaining tokens: ${remaining}`);
 
         if (remaining === 0) {
-
-          Toast.show({
-            type: "error",
-            text1: "Item finished"
-          });
-
+          console.warn(`[OrderPage] Item "${foodName}" is sold out.`);
+          Toast.show({ type: "error", text1: "Item finished for today" });
           setLoading(false);
           return;
         }
 
         if (qty > remaining) {
-
+          console.warn(`[OrderPage] Requested qty (${qty}) exceeds remaining tokens (${remaining}).`);
           Toast.show({
             type: "error",
-            text1: `Only ${remaining} tokens remaining`
+            text1: `Only ${remaining} left`,
+            text2: "Please reduce your quantity",
           });
-
           setLoading(false);
           return;
         }
 
+        console.log(`[OrderPage] Token check passed. qty: ${qty}, remaining: ${remaining}`);
+      } else {
+        console.log(`[OrderPage] No token doc for "${itemId}" — no limit enforced.`);
       }
+
+      console.log(`[OrderPage] All validations passed. Navigating to PaymentScreen. Total: ₹${totalPrice}`);
+
+      router.push({
+        pathname: "/is_signed_in/student_staff/PaymentScreen",
+        params: {
+          itemId,
+          foodName,
+          quantity:     String(qty),
+          pricePerItem: String(price),
+          amount:       String(totalPrice),
+          place:        toBeDelivered ? place : "",
+          toBeDelivered: toBeDelivered ? "yes" : "no",
+        },
+      });
 
     } catch (err) {
-
-      console.error(err);
+      console.error("[OrderPage] ERROR during placeOrder:", err);
+      Toast.show({ type: "error", text1: "Something went wrong" });
+    } finally {
       setLoading(false);
-      return;
-
     }
-
-    setLoading(false);
-
-    router.push({
-      pathname: "/is_signed_in/student_staff/PaymentScreen",
-      params: {
-        amount: totalPrice,
-        foodName,
-        quantity,
-        place: toBeDelivered ? place : "",
-        toBeDelivered: toBeDelivered ? "yes" : "no"
-      }
-    });
-
   };
 
   return (
@@ -403,212 +163,120 @@ export default function OrderPage() {
         <Text style={styles.title}>Food Order</Text>
 
         <Text style={styles.label}>Logged in as</Text>
-
         <View style={styles.userBox}>
           <Ionicons name="person-outline" size={18} color={ORANGE} />
           <Text style={styles.usernameText}>{username}</Text>
         </View>
 
-        <Input label="Food Name" value={foodName} editable={false} />
+        <Text style={styles.label}>Food Name</Text>
+        <View style={[styles.input, { backgroundColor: "#F3F3F3" }]}>
+          <Text style={{ color: "#333" }}>{foodName}</Text>
+        </View>
 
-        <Input
-          label="Quantity"
+        <Text style={styles.label}>Quantity</Text>
+        <TextInput
           value={quantity}
-          onChange={setQuantity}
-          keyboard="number-pad"
+          onChangeText={(val) => {
+            if (/^\d*$/.test(val)) {
+              console.log(`[OrderPage] Quantity changed to: ${val}`);
+              setQuantity(val);
+            }
+          }}
+          keyboardType="number-pad"
+          placeholder="Enter quantity"
+          style={styles.input}
         />
 
         {totalPrice > 0 && (
-
           <View style={styles.priceContainer}>
             <Text style={styles.priceTitle}>TOTAL AMOUNT</Text>
             <Text style={styles.priceText}>₹ {totalPrice}</Text>
           </View>
-
         )}
 
         <TouchableOpacity
           style={styles.toggleRow}
-          onPress={() => setToBeDelivered(!toBeDelivered)}
+          onPress={() => {
+            const next = !toBeDelivered;
+            console.log(`[OrderPage] Delivery toggled to: ${next}`);
+            setToBeDelivered(next);
+            setPlace("");
+          }}
         >
-
-          <Ionicons
-            name={toBeDelivered ? "checkbox" : "square-outline"}
-            size={22}
-            color={ORANGE}
-          />
-
+          <Ionicons name={toBeDelivered ? "checkbox" : "square-outline"} size={22} color={ORANGE} />
           <Text style={styles.toggleText}>To be delivered</Text>
-
         </TouchableOpacity>
 
         {toBeDelivered && (
-
           <View style={{ marginTop: 12 }}>
-
             <Text style={styles.label}>Delivery Place</Text>
 
             <TouchableOpacity
-              style={[
-                styles.input,
-                {
-                  flexDirection: "row",
-                  justifyContent: "space-between",
-                  alignItems: "center"
-                }
-              ]}
-              onPress={() => setShowDropdown(!showDropdown)}
+              style={[styles.input, { flexDirection: "row", justifyContent: "space-between", alignItems: "center" }]}
+              onPress={() => {
+                console.log(`[OrderPage] Dropdown toggled. Now: ${!showDropdown ? "open" : "closed"}`);
+                setShowDropdown(!showDropdown);
+              }}
             >
-
-              <Text style={{ color: place ? "#000" : "#999" }}>
-                {place || "Select place"}
-              </Text>
-
-              <Ionicons
-                name={showDropdown ? "chevron-up" : "chevron-down"}
-                size={20}
-                color={ORANGE}
-              />
-
+              <Text style={{ color: place ? "#000" : "#999" }}>{place || "Select place"}</Text>
+              <Ionicons name={showDropdown ? "chevron-up" : "chevron-down"} size={20} color={ORANGE} />
             </TouchableOpacity>
 
             {showDropdown && (
-
-              <View
-                style={{
-                  borderWidth: 1,
-                  borderColor: "#ddd",
-                  borderRadius: 8,
-                  marginTop: 6,
-                  backgroundColor: "#fff",
-                  maxHeight: 180
-                }}
-              >
-
-                <ScrollView
-                  showsVerticalScrollIndicator={false}
-                  nestedScrollEnabled
-                >
-
-                  {PLACES.map((item) => (
-
+              <View style={styles.dropdown}>
+                <ScrollView showsVerticalScrollIndicator={false} nestedScrollEnabled>
+                  {PLACES.map((p) => (
                     <TouchableOpacity
-                      key={item}
-                      style={{
-                        padding: 12,
-                        borderBottomWidth: 1,
-                        borderBottomColor: "#eee"
-                      }}
+                      key={p}
+                      style={styles.dropdownItem}
                       onPress={() => {
-
-                        setPlace(item);
+                        console.log(`[OrderPage] Delivery place selected: ${p}`);
+                        setPlace(p);
                         setShowDropdown(false);
-
                       }}
                     >
-
-                      <Text>{item}</Text>
-
+                      <Text style={{ color: place === p ? ORANGE : "#333" }}>{p}</Text>
+                      {place === p && <Ionicons name="checkmark" size={16} color={ORANGE} />}
                     </TouchableOpacity>
-
                   ))}
-
                 </ScrollView>
-
               </View>
-
             )}
-
           </View>
-
         )}
 
-        <TouchableOpacity style={styles.button} onPress={placeOrder}>
-
-          <Ionicons name="cart-outline" size={20} color="#fff" />
-
-          <Text style={styles.buttonText}>
-            {loading ? "ORDERING..." : "PLACE ORDER"}
-          </Text>
-
+        <TouchableOpacity
+          style={[styles.button, loading && { opacity: 0.7 }]}
+          onPress={placeOrder}
+          disabled={loading}
+        >
+          {loading ? (
+            <ActivityIndicator color="#fff" size="small" />
+          ) : (
+            <>
+              <Ionicons name="cart-outline" size={20} color="#fff" />
+              <Text style={styles.buttonText}>PLACE ORDER</Text>
+            </>
+          )}
         </TouchableOpacity>
 
       </ScrollView>
 
       <View style={styles.navbar}>
-
-        <NavItem
-          icon="home"
-          label="Home"
-          onPress={() => router.push("/is_signed_in/student_staff/HomeScreen")}
-        />
-
-        <NavItem
-          icon="restaurant-outline"
-          label="Menu"
-          onPress={() => router.push("/is_signed_in/student_staff/ShowMenu")}
-        />
-
-        <NavItem
-          icon="receipt-outline"
-          label="Orders"
-          active
-        />
-
-        <NavItem
-          icon="person-outline"
-          label="Profile"
-          onPress={() => router.push("/is_signed_in/student_staff/ProfileScreen")}
-        />
-
+        <NavItem icon="home" label="Home" onPress={() => router.push("/is_signed_in/student_staff/HomeScreen")} />
+        <NavItem icon="restaurant-outline" label="Menu" onPress={() => router.push("/is_signed_in/student_staff/ShowMenu")} />
+        <NavItem icon="receipt-outline" label="Orders" active />
+        <NavItem icon="person-outline" label="Profile" onPress={() => router.push("/is_signed_in/student_staff/ProfileScreen")} />
       </View>
-
     </SafeAreaView>
   );
 }
 
-function Input({ label, value, onChange, keyboard, editable = true }) {
-
-  return (
-    <>
-      <Text style={styles.label}>{label}</Text>
-
-      <TextInput
-        value={value}
-        onChangeText={onChange}
-        keyboardType={keyboard}
-        editable={editable}
-        style={[
-          styles.input,
-          !editable && { backgroundColor: "#F3F3F3" }
-        ]}
-      />
-    </>
-  );
-
-}
-
 function NavItem({ icon, label, onPress, active }) {
-
   return (
     <TouchableOpacity style={styles.navItem} onPress={onPress}>
-
-      <Ionicons
-        name={icon}
-        size={24}
-        color={active ? ORANGE : INACTIVE}
-      />
-
-      <Text
-        style={[
-          styles.navText,
-          active && { color: ORANGE, fontWeight: "bold" }
-        ]}
-      >
-        {label}
-      </Text>
-
+      <Ionicons name={icon} size={24} color={active ? ORANGE : INACTIVE} />
+      <Text style={[styles.navText, active && { color: ORANGE, fontWeight: "bold" }]}>{label}</Text>
     </TouchableOpacity>
   );
-
 }
