@@ -1,5 +1,4 @@
 
-import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
 import { doc, getDoc, collection, onSnapshot } from "firebase/firestore";
 import { useEffect, useState } from "react";
@@ -7,6 +6,7 @@ import { ScrollView, Text, TouchableOpacity, View, StyleSheet } from "react-nati
 import { SafeAreaView } from "react-native-safe-area-context";
 import { auth, db } from "../../../firebaseConfig";
 import { ORANGE, HomeStyles as styles } from "@/assets/src/styles/HomeStyles";
+import Ionicons from "@expo/vector-icons/Ionicons"; 
 
 export default function HomeScreen() {
   const router = useRouter();
@@ -113,11 +113,11 @@ export default function HomeScreen() {
         {/* Action Cards Row 2 */}
         <View style={styles.actions}>
           <ActionCard
-            icon="cube-outline"
-            label="Weekly Subscription"
+            icon="wallet-outline"
+            label="Tokens"
             onPress={() => {
-              console.log("[HomeScreen] Navigating to WeeklySubscription.");
-              router.push("/is_signed_in/student_staff/WeeklySubscription");
+              console.log("[HomeScreen] Navigating to Tokens.");
+              router.push("/is_signed_in/student_staff/Tokens");
             }}
           />
           <ActionCard
@@ -231,8 +231,6 @@ function NavItem({ icon, label, onPress, active, danger }) {
   );
 }
 
-// Local styles for the banner section only
-// (rest of styles come from HomeStyles.js)
 const localStyles = StyleSheet.create({
   bannerContainer: {
     marginTop: 20,
