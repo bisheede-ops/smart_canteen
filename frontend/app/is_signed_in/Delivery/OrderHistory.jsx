@@ -14,129 +14,106 @@ import {
   getDocs,
   query,
   where,
-  updateDoc,
-  doc,
-  increment,
 } from "firebase/firestore";
 import { auth, db } from "../../../firebaseConfig";
-import { Ionicons } from "@expo/vector-icons";
+import Ionicons from "@expo/vector-icons/Ionicons";
 
 const ORANGE = "#FF7A00";
+
+const formatDate = (ts) => {
+  if (!ts) return "Unknown";
+  const date = ts.seconds ? new Date(ts.seconds * 1000) : new Date(ts);
+  if (isNaN(date)) return "Unknown";
+  return date.toLocaleString("en-IN", {
+    day: "2-digit", month: "short", year: "numeric",
+    hour: "2-digit", minute: "2-digit", hour12: true,
+  });
+};
 
 export default function OrderHistory() {
   const [orders, setOrders] = useState([]);
   const [loading, setLoading] = useState(true);
 
-  // ✅ get current delivery agent UID
   const agentUid = auth.currentUser?.uid;
 
   useEffect(() => {
     if (!agentUid) {
-      Toast.show({
-        type: "error",
-        text1: "Not signed in",
-        text2: "Please login again",
-      });
+      Toast.show({ type: "error", text1: "Not signed in", text2: "Please login again" });
       setLoading(false);
       return;
     }
-
     fetchOrders();
   }, [agentUid]);
 
-  // 🔹 Fetch orders assigned to this delivery agent
   const fetchOrders = async () => {
     setLoading(true);
+    console.log(`[DeliveryOrderHistory] Fetching delivered orders for agent: ${agentUid}`);
     try {
+      // ✅ Updated: was "food_ordered", now "orders"
       const q = query(
-        collection(db, "food_ordered"),
+        collection(db, "orders"),
         where("deliveryAgentId", "==", agentUid),
         where("delivered", "==", true)
       );
 
       const snap = await getDocs(q);
 
-      const list = snap.docs.map((docSnap) => ({
-        id: docSnap.id,
-        ...docSnap.data(),
-      }));
+      // Normalize nested orders structure to flat shape
+      const list = snap.docs.map((docSnap) => {
+        const data = docSnap.data();
+        const firstItem = data.items?.[0] || {};
+        return {
+          id:              docSnap.id,
+          username:        data.userName             || data.userEmail || "Unknown",
+          foodName:        firstItem.name            || "Unknown",
+          quantity:        firstItem.quantity        || 0,
+          place:           data.deliveryDetails?.place || "",
+          delivered:       data.delivered            ?? true,
+          delivery_status: data.delivery_status      || "Delivered",
+          orderNumber:     data.orderNumber          || docSnap.id,
+          createdAt:       data.createdAt            || null,
+          pricing:         data.pricing              || {},
+        };
+      });
 
+      console.log(`[DeliveryOrderHistory] Fetched ${list.length} delivered order(s).`);
       setOrders(list);
 
       if (list.length === 0) {
-        Toast.show({
-          type: "info",
-          text1: "No Orders",
-          text2: "No orders delivered yet",
-        });
+        Toast.show({ type: "info", text1: "No Orders", text2: "No orders delivered yet" });
       }
     } catch (error) {
-      console.error("Firestore error:", error);
-      Toast.show({
-        type: "error",
-        text1: "Failed to fetch orders",
-      });
+      console.error("[DeliveryOrderHistory] Firestore error:", error);
+      Toast.show({ type: "error", text1: "Failed to fetch orders" });
     } finally {
       setLoading(false);
     }
   };
 
-  // 🔹 Mark order as delivered + increment completed_order
-  const markDelivered = async (orderId) => {
-    try {
-      // 1️⃣ Update order document
-      const orderRef = doc(db, "food_ordered", orderId);
-      await updateDoc(orderRef, {
-        delivered: true,
-      });
-
-
-      Toast.show({
-        type: "success",
-        text1: "Order delivered",
-      });
-
-      // 3️⃣ Remove delivered order from UI
-      setOrders((prev) => prev.filter((order) => order.id !== orderId));
-    } catch (err) {
-      console.error("Delivery update error:", err);
-      Toast.show({
-        type: "error",
-        text1: "Update failed",
-      });
-    }
-  };
-
-  // 🔹 Render each order
   const renderItem = ({ item }) => (
     <View style={styles.card}>
-      <Text>
-        <Text style={styles.bold}>User:</Text> {item.username}
-      </Text>
-      <Text>
-        <Text style={styles.bold}>Food:</Text> {item.foodName}
-      </Text>
-      <Text>
-        <Text style={styles.bold}>Quantity:</Text> {item.quantity}
-      </Text>
+      <View style={styles.cardHeader}>
+        <Text style={styles.orderNumber}>#{item.orderNumber}</Text>
+        <Text style={styles.orderDate}>{formatDate(item.createdAt)}</Text>
+      </View>
 
-      {item.place && (
-        <Text>
-          <Text style={styles.bold}>Place:</Text> {item.place}
-        </Text>
-      )}
+      <View style={styles.divider} />
 
-      {!item.delivered ? (
-        <TouchableOpacity
-          style={styles.button}
-          onPress={() => markDelivered(item.id)}
-        >
-          <Ionicons name="checkmark-circle-outline" size={20} color="#fff" />
-          <Text style={styles.buttonText}>MARK DELIVERED</Text>
-        </TouchableOpacity>
-      ) : (
-        <Text style={styles.delivered}>✅ Delivered</Text>
-      )}
+      <Text><Text style={styles.bold}>Customer: </Text>{item.username}</Text>
+      <Text><Text style={styles.bold}>Food: </Text>{item.foodName} × {item.quantity}</Text>
+
+      {item.place ? (
+        <Text><Text style={styles.bold}>Place: </Text>{item.place}</Text>
+      ) : null}
+
+      {item.pricing?.total ? (
+        <Text><Text style={styles.bold}>Amount: </Text>₹{item.pricing.total}</Text>
+      ) : null}
+
+      <View style={styles.deliveredBadge}>
+        <Ionicons name="checkmark-circle" size={16} color="#10b981" />
+        <Text style={styles.deliveredText}>Delivered</Text>
+      </View>
     </View>
   );
 
@@ -147,12 +124,15 @@ export default function OrderHistory() {
       {loading ? (
         <ActivityIndicator size="large" color={ORANGE} />
       ) : orders.length === 0 ? (
-        <Text style={styles.emptyText}>No delivered orders</Text>
+        <Text style={styles.emptyText}>No delivered orders yet</Text>
       ) : (
         <FlatList
           data={orders}
           keyExtractor={(item) => item.id}
           renderItem={renderItem}
+          refreshing={loading}
+          onRefresh={fetchOrders}
+          contentContainerStyle={{ paddingBottom: 20 }}
         />
       )}
 
@@ -160,8 +140,6 @@ export default function OrderHistory() {
     </SafeAreaView>
   );
 }
-
-/* ================= STYLES ================= */
 
 const styles = StyleSheet.create({
   container: {
@@ -177,37 +155,54 @@ const styles = StyleSheet.create({
   card: {
     backgroundColor: "#fff",
     padding: 15,
-    borderRadius: 10,
+    borderRadius: 12,
     marginBottom: 12,
     borderWidth: 1,
-    borderColor: "#ddd",
+    borderColor: "#f0f0f0",
+    gap: 6,
+  },
+  cardHeader: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+  },
+  orderNumber: {
+    fontSize: 13,
+    fontWeight: "700",
+    color: "#1a1a1a",
+  },
+  orderDate: {
+    fontSize: 11,
+    color: "#aaa",
+  },
+  divider: {
+    height: 1,
+    backgroundColor: "#f5f5f5",
+    marginVertical: 4,
   },
   bold: {
     fontWeight: "bold",
   },
-  button: {
-    backgroundColor: ORANGE,
+  deliveredBadge: {
     flexDirection: "row",
-    justifyContent: "center",
     alignItems: "center",
-    padding: 12,
-    borderRadius: 8,
-    marginTop: 10,
+    gap: 6,
+    marginTop: 6,
+    backgroundColor: "#ecfdf5",
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    borderRadius: 10,
+    alignSelf: "flex-start",
   },
-  buttonText: {
-    color: "#fff",
-    marginLeft: 6,
-    fontWeight: "bold",
+  deliveredText: {
+    color: "#10b981",
+    fontWeight: "700",
+    fontSize: 13,
   },
   emptyText: {
     textAlign: "center",
     marginTop: 40,
     fontSize: 16,
     color: "#777",
-  },
-  delivered: {
-    marginTop: 10,
-    fontWeight: "bold",
-    color: "green",
   },
 });
