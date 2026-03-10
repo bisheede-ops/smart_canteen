@@ -1,6 +1,3 @@
-
-
-
 import { Ionicons } from "@expo/vector-icons";
 import { router } from "expo-router";
 import { StyleSheet, Text, TouchableOpacity, View } from "react-native";
@@ -23,8 +20,16 @@ const gridItems = [
     subtitle: "Today's special",
     onPress: () => router.push("/is_signed_in/Admin/SpecialFood"),
   },
-  { title: "Subscription", subtitle: "Weekly plan" },
-  { title: "Token", subtitle: "Generate token" },
+  {
+    title: "Pickup Orders",
+    subtitle: "Self pickup pending",
+    onPress: () => router.push("/is_signed_in/Admin/PickupOrders"),
+  },
+  {
+    title: "Token",
+    subtitle: "Generate token",
+    onPress: () => router.push("/is_signed_in/Admin/Tokens"),
+  },
   {
     title: "Assign Details",
     subtitle: "Pass details to delivery agent",
@@ -46,8 +51,6 @@ export default function Index() {
       {/* ---------- HEADER ---------- */}
       <View style={styles.header}>
         <Text style={styles.appName}>SmartCanteen</Text>
-
-        {/* LOGOUT ICON */}
         <TouchableOpacity onPress={handleLogout} style={styles.logoutBtn}>
           <Ionicons name="log-out-outline" size={26} color="#FF7A00" />
         </TouchableOpacity>
@@ -72,7 +75,7 @@ export default function Index() {
       <TouchableOpacity
         style={styles.bottomButton}
         activeOpacity={0.9}
-        onPress={() => router.push("/is_signed_in/Admin/TotalToken")}
+        onPress={() => router.push("/is_signed_in/Admin/AddToken")}
       >
         <Text style={styles.bottomButtonText}>Add Total Token Count</Text>
       </TouchableOpacity>
@@ -88,32 +91,25 @@ const styles = StyleSheet.create({
     padding: 20,
     marginTop: 20,
   },
-
-  /* HEADER */
   header: {
     marginBottom: 24,
     justifyContent: "center",
   },
-
   appName: {
     fontSize: 26,
     fontWeight: "800",
     color: "#FF7A00",
   },
-
   logoutBtn: {
     position: "absolute",
     right: 0,
     padding: 6,
   },
-
-  /* GRID */
   grid: {
     flexDirection: "row",
     flexWrap: "wrap",
     justifyContent: "space-between",
   },
-
   card: {
     backgroundColor: "#FFFFFF",
     width: "48%",
@@ -122,25 +118,20 @@ const styles = StyleSheet.create({
     padding: 16,
     marginBottom: 16,
     justifyContent: "space-between",
-
     shadowColor: "#000",
     shadowOpacity: 0.08,
     shadowRadius: 8,
     elevation: 5,
   },
-
   cardTitle: {
     fontSize: 17,
     fontWeight: "700",
     color: "#FF7A00",
   },
-
   cardSubtitle: {
     fontSize: 13,
     color: "#666",
   },
-
-  /* BOTTOM BUTTON */
   bottomButton: {
     marginTop: 10,
     backgroundColor: "#FF7A00",
@@ -148,7 +139,6 @@ const styles = StyleSheet.create({
     borderRadius: 16,
     alignItems: "center",
   },
-
   bottomButtonText: {
     color: "#FFFFFF",
     fontSize: 16,

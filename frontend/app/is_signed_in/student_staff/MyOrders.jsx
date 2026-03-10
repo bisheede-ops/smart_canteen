@@ -4,7 +4,7 @@ import {
   View, StyleSheet, TouchableOpacity,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { Ionicons } from "@expo/vector-icons";
+import Ionicons from "@expo/vector-icons/Ionicons";
 import Toast from "react-native-toast-message";
 import { collection, query, where, orderBy, getDocs } from "firebase/firestore";
 import { auth, db } from "../../../firebaseConfig";
@@ -16,6 +16,14 @@ const STATUS_CONFIG = {
   confirmed: { color: "#3b82f6", bg: "#eff6ff", icon: "checkmark-circle-outline", label: "Confirmed" },
   preparing: { color: "#f59e0b", bg: "#fffbeb", icon: "restaurant-outline",        label: "Preparing" },
   ready:     { color: "#10b981", bg: "#ecfdf5", icon: "bag-check-outline",         label: "Ready"     },
+};
+
+// Delivery status shown on the card
+const DELIVERY_STATUS_CONFIG = {
+  "not picked up":      { color: "#f59e0b", bg: "#fffbeb", icon: "time-outline",          label: "Waiting for agent"   },
+  "Picked up":          { color: "#3b82f6", bg: "#eff6ff", icon: "bicycle-outline",       label: "Picked up"           },
+  "On my way":          { color: "#8b5cf6", bg: "#f5f3ff", icon: "navigate-outline",      label: "On the way"          },
+  "Near your location": { color: "#f97316", bg: "#fff7ed", icon: "location-outline",      label: "Almost there!"       },
 };
 
 const formatDate = (ts) => {
@@ -51,9 +59,18 @@ export default function MyOrders() {
         orderBy("createdAt", "desc")
       );
       const snap = await getDocs(q);
-      const list = snap.docs.map(d => ({ id: d.id, ...d.data() }));
-      console.log(`[MyOrders] Fetched ${list.length} active orders.`);
-      setOrders(list);
+      const all  = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+
+      // Filter out orders that have been delivered or picked up
+      // These should only appear in OrderHistory
+      const active = all.filter(o => {
+        const deliveryDone = o.delivery_status?.toLowerCase() === "delivered";
+        const pickedUp     = o.status === "picked_up";
+        return !deliveryDone && !pickedUp;
+      });
+
+      console.log(`[MyOrders] Fetched ${all.length} orders, ${active.length} still active.`);
+      setOrders(active);
     } catch (err) {
       console.error("[MyOrders] ERROR fetching orders:", err);
       Toast.show({ type: "error", text1: "Failed to fetch orders" });
@@ -70,6 +87,12 @@ export default function MyOrders() {
     const status     = STATUS_CONFIG[item.status] || STATUS_CONFIG.confirmed;
     const itemInfo   = item.items?.[0];
     const isDelivery = item.deliveryDetails?.toBeDelivered;
+
+    // Delivery progress config
+    const deliveryStatus     = item.delivery_status;
+    const deliveryStatusConf = deliveryStatus
+      ? DELIVERY_STATUS_CONFIG[deliveryStatus]
+      : null;
 
     return (
       <View style={styles.card}>
@@ -119,21 +142,60 @@ export default function MyOrders() {
         </View>
 
         {/* Delivery agent if assigned */}
-        {isDelivery && item.deliveryDetails?.agentName ? (
+        {isDelivery && item.deliveryAgentName ? (
           <View style={styles.infoRow}>
             <Ionicons name="person-outline" size={15} color="#aaa" />
             <Text style={styles.infoLabel}>Agent</Text>
-            <Text style={styles.infoValue}>{item.deliveryDetails.agentName}</Text>
+            <Text style={styles.infoValue}>{item.deliveryAgentName}</Text>
           </View>
         ) : null}
 
-        {/* Ready banner */}
-        {item.status === "ready" && (
+        {/* ── Delivery status tracker (only for delivery orders) ── */}
+        {isDelivery && (
+          <View style={styles.deliveryTracker}>
+            <Text style={styles.deliveryTrackerTitle}>Delivery Status</Text>
+
+            {deliveryStatusConf ? (
+              <View style={[styles.deliveryStatusRow, { backgroundColor: deliveryStatusConf.bg }]}>
+                <Ionicons name={deliveryStatusConf.icon} size={16} color={deliveryStatusConf.color} />
+                <Text style={[styles.deliveryStatusText, { color: deliveryStatusConf.color }]}>
+                  {deliveryStatusConf.label}
+                </Text>
+              </View>
+            ) : (
+              // No agent assigned yet
+              <View style={[styles.deliveryStatusRow, { backgroundColor: "#f5f5f5" }]}>
+                <Ionicons name="hourglass-outline" size={16} color="#aaa" />
+                <Text style={[styles.deliveryStatusText, { color: "#aaa" }]}>
+                  Waiting for assignment
+                </Text>
+              </View>
+            )}
+
+            {/* Step indicators */}
+            <View style={styles.stepsRow}>
+              {["not picked up", "Picked up", "On my way", "Near your location"].map((step, i) => {
+                const steps      = ["not picked up", "Picked up", "On my way", "Near your location"];
+                const currentIdx = steps.indexOf(deliveryStatus);
+                const done       = currentIdx >= i;
+                return (
+                  <View key={step} style={styles.stepItem}>
+                    <View style={[styles.stepDot, done && styles.stepDotDone]} />
+                    {i < steps.length - 1 && (
+                      <View style={[styles.stepLine, done && i < currentIdx && styles.stepLineDone]} />
+                    )}
+                  </View>
+                );
+              })}
+            </View>
+          </View>
+        )}
+
+        {/* Ready banner for pickup orders */}
+        {item.status === "ready" && !isDelivery && (
           <View style={styles.readyBanner}>
             <Ionicons name="notifications-outline" size={15} color="#10b981" />
-            <Text style={styles.readyBannerText}>
-              {isDelivery ? "Out for delivery!" : "Ready for pickup at canteen!"}
-            </Text>
+            <Text style={styles.readyBannerText}>Ready for pickup at canteen!</Text>
           </View>
         )}
 
@@ -253,6 +315,36 @@ const styles = StyleSheet.create({
   infoLabel: { flex: 1, fontSize: 13, color: "#999" },
   infoValue: { fontSize: 13, fontWeight: "600", color: "#1a1a1a", maxWidth: "55%", textAlign: "right" },
   amountText: { color: ORANGE, fontWeight: "700" },
+
+  // ── Delivery tracker ───────────────────────────────────────────
+  deliveryTracker: {
+    marginTop: 10, padding: 12,
+    backgroundColor: "#fafafa", borderRadius: 12,
+    borderWidth: 1, borderColor: "#f0f0f0",
+  },
+  deliveryTrackerTitle: {
+    fontSize: 11, fontWeight: "700", color: "#bbb",
+    textTransform: "uppercase", letterSpacing: 0.5, marginBottom: 8,
+  },
+  deliveryStatusRow: {
+    flexDirection: "row", alignItems: "center", gap: 8,
+    paddingHorizontal: 10, paddingVertical: 8, borderRadius: 10, marginBottom: 10,
+  },
+  deliveryStatusText: { fontSize: 13, fontWeight: "700" },
+
+  stepsRow: {
+    flexDirection: "row", alignItems: "center",
+  },
+  stepItem: { flexDirection: "row", alignItems: "center", flex: 1 },
+  stepDot: {
+    width: 10, height: 10, borderRadius: 5,
+    backgroundColor: "#e5e7eb", borderWidth: 2, borderColor: "#d1d5db",
+  },
+  stepDotDone: { backgroundColor: ORANGE, borderColor: ORANGE },
+  stepLine: {
+    flex: 1, height: 2, backgroundColor: "#e5e7eb",
+  },
+  stepLineDone: { backgroundColor: ORANGE },
 
   readyBanner: {
     flexDirection: "row", alignItems: "center", gap: 6,

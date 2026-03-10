@@ -1,11 +1,10 @@
-
 import { useEffect, useState, useCallback } from "react";
 import {
   ActivityIndicator, FlatList, Text,
   View, StyleSheet, TouchableOpacity,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { Ionicons } from "@expo/vector-icons";
+import Ionicons from "@expo/vector-icons/Ionicons";
 import Toast from "react-native-toast-message";
 import { collection, query, where, orderBy, getDocs } from "firebase/firestore";
 import { auth, db } from "../../../firebaseConfig";
@@ -14,9 +13,9 @@ import { useRouter } from "expo-router";
 const ORANGE = "#FF7A00";
 
 const STATUS_CONFIG = {
-  delivered:  { color: "#6366f1", bg: "#eef2ff", icon: "bicycle-outline",        label: "Delivered"  },
-  picked_up:  { color: "#10b981", bg: "#ecfdf5", icon: "walk-outline",           label: "Picked Up"  },
-  cancelled:  { color: "#ef4444", bg: "#fef2f2", icon: "close-circle-outline",   label: "Cancelled"  },
+  delivered:  { color: "#6366f1", bg: "#eef2ff", icon: "bicycle-outline",      label: "Delivered"  },
+  picked_up:  { color: "#10b981", bg: "#ecfdf5", icon: "walk-outline",         label: "Picked Up"  },
+  cancelled:  { color: "#ef4444", bg: "#fef2f2", icon: "close-circle-outline", label: "Cancelled"  },
 };
 
 const formatDate = (ts) => {
@@ -45,16 +44,43 @@ export default function OrderHistory() {
     setLoading(true);
 
     try {
-      const q = query(
-        collection(db, "orders"),
-        where("userId", "==", uid),
-        where("status", "in", ["delivered", "picked_up", "cancelled"]),
-        orderBy("createdAt", "desc")
-      );
-      const snap = await getDocs(q);
-      const list = snap.docs.map(d => ({ id: d.id, ...d.data() }));
-      console.log(`[OrderHistory] Fetched ${list.length} completed orders.`);
-      setOrders(list);
+      // Fetch both completed statuses AND still-confirmed orders
+      // (delivery orders stay "confirmed" in status but delivery_status becomes "Delivered")
+      const [completedSnap, activeSnap] = await Promise.all([
+        // Orders that are fully completed by status
+        getDocs(query(
+          collection(db, "orders"),
+          where("userId", "==", uid),
+          where("status", "in", ["delivered", "picked_up", "cancelled"]),
+          orderBy("createdAt", "desc")
+        )),
+        // Orders still "confirmed/preparing/ready" but delivery_status is "Delivered"
+        getDocs(query(
+          collection(db, "orders"),
+          where("userId", "==", uid),
+          where("delivery_status", "==", "Delivered"),
+          orderBy("createdAt", "desc")
+        )),
+      ]);
+
+      const completedList = completedSnap.docs.map(d => ({ id: d.id, ...d.data() }));
+      const deliveredList = activeSnap.docs.map(d => ({ id: d.id, ...d.data() }));
+
+      // Merge and deduplicate by id
+      const merged = [...completedList];
+      deliveredList.forEach(o => {
+        if (!merged.find(m => m.id === o.id)) merged.push(o);
+      });
+
+      // Sort by createdAt descending
+      merged.sort((a, b) => {
+        const aTime = a.createdAt?.seconds ?? 0;
+        const bTime = b.createdAt?.seconds ?? 0;
+        return bTime - aTime;
+      });
+
+      console.log(`[OrderHistory] Total history orders: ${merged.length}`);
+      setOrders(merged);
     } catch (err) {
       console.error("[OrderHistory] ERROR fetching order history:", err);
       Toast.show({ type: "error", text1: "Failed to fetch order history" });
@@ -67,13 +93,30 @@ export default function OrderHistory() {
     fetchHistory();
   }, []);
 
+  // Resolve display status — delivery_status "Delivered" takes priority
+  const resolveStatus = (item) => {
+    if (item.delivery_status?.toLowerCase() === "delivered") {
+      return STATUS_CONFIG.delivered;
+    }
+    return STATUS_CONFIG[item.status] || STATUS_CONFIG.delivered;
+  };
+
+  const resolveFooterText = (item) => {
+    if (item.delivery_status?.toLowerCase() === "delivered") return "Delivered successfully";
+    if (item.status === "delivered")  return "Delivered successfully";
+    if (item.status === "picked_up")  return "Picked up from canteen";
+    if (item.status === "cancelled")  return "Order was cancelled";
+    return "Completed";
+  };
+
   const renderOrder = ({ item }) => {
-    const status     = STATUS_CONFIG[item.status] || STATUS_CONFIG.delivered;
+    const status     = resolveStatus(item);
     const itemInfo   = item.items?.[0];
     const isDelivery = item.deliveryDetails?.toBeDelivered;
+    const isCancelled = item.status === "cancelled";
 
     return (
-      <View style={[styles.card, item.status === "cancelled" && styles.cardCancelled]}>
+      <View style={[styles.card, isCancelled && styles.cardCancelled]}>
 
         {/* Header */}
         <View style={styles.cardHeader}>
@@ -119,25 +162,30 @@ export default function OrderHistory() {
           </Text>
         </View>
 
+        {/* Agent name if delivery */}
+        {isDelivery && item.deliveryAgentName ? (
+          <View style={styles.infoRow}>
+            <Ionicons name="person-outline" size={15} color="#aaa" />
+            <Text style={styles.infoLabel}>Delivered by</Text>
+            <Text style={styles.infoValue}>{item.deliveryAgentName}</Text>
+          </View>
+        ) : null}
+
         {/* Completion footer */}
         <View style={[
           styles.footerBanner,
-          item.status === "cancelled"
-            ? styles.footerBannerCancelled
-            : styles.footerBannerSuccess
+          isCancelled ? styles.footerBannerCancelled : styles.footerBannerSuccess,
         ]}>
           <Ionicons
-            name={item.status === "cancelled" ? "close-circle-outline" : "checkmark-done-outline"}
+            name={isCancelled ? "close-circle-outline" : "checkmark-done-outline"}
             size={14}
-            color={item.status === "cancelled" ? "#ef4444" : "#10b981"}
+            color={isCancelled ? "#ef4444" : "#10b981"}
           />
           <Text style={[
             styles.footerBannerText,
-            item.status === "cancelled" && { color: "#ef4444" }
+            isCancelled && { color: "#ef4444" },
           ]}>
-            {item.status === "delivered"  && "Delivered successfully"}
-            {item.status === "picked_up"  && "Picked up from canteen"}
-            {item.status === "cancelled"  && "Order was cancelled"}
+            {resolveFooterText(item)}
           </Text>
         </View>
 

@@ -1,5 +1,3 @@
-
-
 import React, { useEffect, useState } from "react";
 import {
   View, Text, TouchableOpacity,
@@ -29,8 +27,9 @@ export default function PaymentScreen() {
 
   const [loading, setLoading]   = useState(false);
   const [username, setUsername] = useState("");
+  const [phone, setPhone]       = useState("");         // ← new
 
-  /* ---------- FETCH USERNAME ---------- */
+  /* ---------- FETCH USER DATA ---------- */
   useEffect(() => {
     console.log(`[PaymentScreen] Screen mounted. foodName: ${foodName}, quantity: ${quantity}, amount: ₹${amount}, itemId: ${itemId}`);
 
@@ -39,28 +38,31 @@ export default function PaymentScreen() {
       Toast.show({ type: "error", text1: "Invalid amount" });
     }
 
-    const fetchUsername = async () => {
+    const fetchUserData = async () => {
       const uid = auth.currentUser?.uid;
       if (!uid) {
         console.warn("[PaymentScreen] No authenticated user.");
         return;
       }
-      console.log(`[PaymentScreen] Fetching username for uid: ${uid}`);
+      console.log(`[PaymentScreen] Fetching user data for uid: ${uid}`);
       try {
         const snap = await getDoc(doc(db, "users", uid));
         if (snap.exists()) {
-          const name = snap.data().username || snap.data().name || "Unknown";
-          console.log(`[PaymentScreen] Username fetched: ${name}`);
+          const data = snap.data();
+          const name  = data.username || data.name  || "Unknown";
+          const ph    = data.phone                  || "";       // ← fetch phone
+          console.log(`[PaymentScreen] User fetched — name: ${name}, phone: ${ph}`);
           setUsername(name);
+          setPhone(ph);
         } else {
           console.warn("[PaymentScreen] User document not found in Firestore.");
         }
       } catch (e) {
-        console.error("[PaymentScreen] ERROR fetching username:", e);
+        console.error("[PaymentScreen] ERROR fetching user data:", e);
       }
     };
 
-    fetchUsername();
+    fetchUserData();
   }, []);
 
   /* ---------- HANDLE PAYMENT ---------- */
@@ -119,10 +121,10 @@ export default function PaymentScreen() {
       console.log("[PaymentScreen] Payment sheet completed — user paid.");
 
       // ── 4. Save order + increment counter + decrement token ───────
-      const user        = auth.currentUser;
-      const orderRef    = doc(collection(db, "orders"));
-      const tokenRef    = doc(db, "token", foodName.toLowerCase());
-      const counterRef  = doc(db, "meta", "orderCounter");
+      const user       = auth.currentUser;
+      const orderRef   = doc(collection(db, "orders"));
+      const tokenRef   = doc(db, "token", foodName.toLowerCase());
+      const counterRef = doc(db, "meta", "orderCounter");
 
       let resolvedOrderNumber = null;
 
@@ -171,8 +173,10 @@ export default function PaymentScreen() {
         // Save order document
         transaction.set(orderRef, {
           userId:    user.uid,
-          userName:  username || user.email || "Unknown",
+          userName:  username  || user.email || "Unknown",
           userEmail: user.email || "",
+          phone:     phone     || "",                          // ← saved to order
+
           items: [{
             itemId,
             name:     foodName,
@@ -193,15 +197,14 @@ export default function PaymentScreen() {
           },
           deliveryDetails: { place, toBeDelivered },
           orderNumber: `SC-${new Date().toISOString().slice(0, 10).replace(/-/g, "")}-${nextOrderNumber}`,
-          status:      "confirmed",
-          note:        "",
-          createdAt:   serverTimestamp(),
-          updatedAt:   serverTimestamp(),
+          status:    "confirmed",
+          note:      "",
+          createdAt: serverTimestamp(),
+          updatedAt: serverTimestamp(),
         });
 
         console.log(`[PaymentScreen] Order set in transaction. orderId: ${orderRef.id}, orderNumber: ${nextOrderNumber}`);
 
-        // Store for use after transaction
         resolvedOrderNumber = `SC-${new Date().toISOString().slice(0, 10).replace(/-/g, "")}-${nextOrderNumber}`;
       });
 
@@ -256,6 +259,13 @@ export default function PaymentScreen() {
           <Ionicons name="person-outline" size={16} color="#999" />
           <Text style={styles.rowLabel}>Ordering as</Text>
           <Text style={styles.rowValue}>{username || "..."}</Text>
+        </View>
+
+        {/* Phone number row */}
+        <View style={styles.row}>
+          <Ionicons name="call-outline" size={16} color="#999" />
+          <Text style={styles.rowLabel}>Phone</Text>
+          <Text style={styles.rowValue}>{phone || "..."}</Text>
         </View>
 
         <View style={styles.divider} />
