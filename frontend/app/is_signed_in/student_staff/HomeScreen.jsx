@@ -425,7 +425,7 @@ export default function HomeScreen() {
             label="Weekly Subscription"
             onPress={() => {
               console.log("[HomeScreen] Navigating to OrderHistory.");
-              router.push("/is_signed_in/student_staff/OrderHistor");
+              router.push("/is_signed_in/student_staff/Weekly");
             }}
           />
         </View>
