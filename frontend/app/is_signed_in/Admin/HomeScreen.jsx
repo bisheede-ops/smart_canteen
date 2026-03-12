@@ -1,3 +1,150 @@
+// import { Ionicons } from "@expo/vector-icons";
+// import { router } from "expo-router";
+// import { StyleSheet, Text, TouchableOpacity, View } from "react-native";
+
+// /* ---------- MAIN DASHBOARD ITEMS ---------- */
+// const gridItems = [
+//   {
+//     title: "Menu",
+//     subtitle: "View food items",
+//     onPress: () => router.push("is_signed_in/Admin/AddNewMenu"),
+//   },
+//   {
+//     title: "Delivery Agent",
+//     subtitle: "Add new agent",
+//     onPress: () => router.push("is_signed_in/Admin/AddDeliveryAgent"),
+//   },
+//   { title: "Emergency Meal", subtitle: "Instant food" },
+//   {
+//     title: "Special Food",
+//     subtitle: "Today's special",
+//     onPress: () => router.push("/is_signed_in/Admin/SpecialFood"),
+//   },
+//   {
+//     title: "Transactions",
+//     subtitle: "View paid transactions",
+//     onPress: () => router.push("/is_signed_in/Admin/PickupOrders"),
+//   },
+//   {
+//     title: "Token",
+//     subtitle: "Generate token",
+//     onPress: () => router.push("/is_signed_in/Admin/Tokens"),
+//   },
+//   {
+//     title: "Assign Details",
+//     subtitle: "Pass details to delivery agent",
+//     onPress: () => router.push("/is_signed_in/Admin/DeliveryAssign"),
+//   },
+//   {
+//     title: "Feedback",
+//     subtitle: "Suggestions and Reviews",
+//   },
+// ];
+
+// export default function Index() {
+//   const handleLogout = () => {
+//     router.push("is_signed_in/Admin/ProfileScreen");
+//   };
+
+//   return (
+//     <View style={styles.container}>
+//       {/* ---------- HEADER ---------- */}
+//       <View style={styles.header}>
+//         <Text style={styles.appName}>SmartCanteen</Text>
+//         <TouchableOpacity onPress={handleLogout} style={styles.logoutBtn}>
+//           <Ionicons name="log-out-outline" size={26} color="#FF7A00" />
+//         </TouchableOpacity>
+//       </View>
+
+//       {/* ---------- GRID (2 COLUMNS) ---------- */}
+//       <View style={styles.grid}>
+//         {gridItems.map((item, index) => (
+//           <TouchableOpacity
+//             key={index}
+//             style={styles.card}
+//             activeOpacity={0.85}
+//             onPress={item.onPress}
+//           >
+//             <Text style={styles.cardTitle}>{item.title}</Text>
+//             <Text style={styles.cardSubtitle}>{item.subtitle}</Text>
+//           </TouchableOpacity>
+//         ))}
+//       </View>
+
+//       {/* ---------- ADD TOTAL TOKEN BUTTON ---------- */}
+//       <TouchableOpacity
+//         style={styles.bottomButton}
+//         activeOpacity={0.9}
+//         onPress={() => router.push("/is_signed_in/Admin/AddToken")}
+//       >
+//         <Text style={styles.bottomButtonText}>Add Total Token Count</Text>
+//       </TouchableOpacity>
+//     </View>
+//   );
+// }
+
+// /* ---------- STYLES ---------- */
+// const styles = StyleSheet.create({
+//   container: {
+//     flex: 1,
+//     backgroundColor: "#FFF6ED",
+//     padding: 20,
+//     marginTop: 20,
+//   },
+//   header: {
+//     marginBottom: 24,
+//     justifyContent: "center",
+//   },
+//   appName: {
+//     fontSize: 26,
+//     fontWeight: "800",
+//     color: "#FF7A00",
+//   },
+//   logoutBtn: {
+//     position: "absolute",
+//     right: 0,
+//     padding: 6,
+//   },
+//   grid: {
+//     flexDirection: "row",
+//     flexWrap: "wrap",
+//     justifyContent: "space-between",
+//   },
+//   card: {
+//     backgroundColor: "#FFFFFF",
+//     width: "48%",
+//     height: 140,
+//     borderRadius: 18,
+//     padding: 16,
+//     marginBottom: 16,
+//     justifyContent: "space-between",
+//     shadowColor: "#000",
+//     shadowOpacity: 0.08,
+//     shadowRadius: 8,
+//     elevation: 5,
+//   },
+//   cardTitle: {
+//     fontSize: 17,
+//     fontWeight: "700",
+//     color: "#FF7A00",
+//   },
+//   cardSubtitle: {
+//     fontSize: 13,
+//     color: "#666",
+//   },
+//   bottomButton: {
+//     marginTop: 10,
+//     backgroundColor: "#FF7A00",
+//     paddingVertical: 16,
+//     borderRadius: 16,
+//     alignItems: "center",
+//   },
+//   bottomButtonText: {
+//     color: "#FFFFFF",
+//     fontSize: 16,
+//     fontWeight: "700",
+//   },
+// });
 import { Ionicons } from "@expo/vector-icons";
 import { router } from "expo-router";
 import { StyleSheet, Text, TouchableOpacity, View } from "react-native";
@@ -36,8 +183,9 @@ const gridItems = [
     onPress: () => router.push("/is_signed_in/Admin/DeliveryAssign"),
   },
   {
-    title: "Feedback",
-    subtitle: "Suggestions and Reviews",
+    title: "Reward",
+    subtitle: "Select winnner",
+    onPress: () => router.push("/is_signed_in/Admin/Reward"),
   },
 ];
 
