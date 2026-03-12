@@ -1,3 +1,284 @@
+// // import { useEffect, useState } from "react";
+// // import { router } from "expo-router";
+// // import {
+// //   ActivityIndicator,
+// //   FlatList,
+// //   Text,
+// //   View,
+// //   TouchableOpacity,
+// //   Modal,
+// // } from "react-native";
+// // import { SafeAreaView } from "react-native-safe-area-context";
+
+// // import { OrdersStyles as styles, ORANGE } from "@/assets/src/styles/OrdersStyles";
+
+// // import Toast from "react-native-toast-message";
+// // import {
+// //   collection,
+// //   getDocs,
+// //   query,
+// //   where,
+// //   updateDoc,
+// //   doc,
+// //   increment,
+// // } from "firebase/firestore";
+// // import { auth, db } from "../../../firebaseConfig";
+// // import { Ionicons } from "@expo/vector-icons";
+
+// // const DELIVERY_STATUSES = [
+// //   "not picked up",
+// //   "Picked up",
+// //   "On my way",
+// //   "Near your location",
+// // ];
+
+// // // Safe date parsing
+// // const parseOrderDate = (createdAt) => {
+// //   if (!createdAt) return null;
+
+// //   try {
+// //     if (createdAt?.seconds) {
+// //       return new Date(createdAt.seconds * 1000);
+// //     }
+
+// //     if (typeof createdAt === "string") {
+// //       const dateObj = new Date(createdAt);
+// //       if (isNaN(dateObj.getTime())) return null;
+// //       return dateObj;
+// //     }
+
+// //     if (createdAt instanceof Date) return createdAt;
+
+// //     return null;
+// //   } catch (err) {
+// //     console.warn("Invalid createdAt value:", createdAt, err);
+// //     return null;
+// //   }
+// // };
+
+// // const formatOrderDate = (createdAt) => {
+// //   const date = parseOrderDate(createdAt);
+// //   if (!date) return "Unknown time";
+
+// //   return date.toLocaleString("en-IN", {
+// //     day: "2-digit",
+// //     month: "short",
+// //     year: "numeric",
+// //     hour: "2-digit",
+// //     minute: "2-digit",
+// //     hour12: true,
+// //   });
+// // };
+
+// // export default function DeliveryOrders() {
+// //   const [orders, setOrders] = useState([]);
+// //   const [loading, setLoading] = useState(true);
+// //   const [statusModalVisible, setStatusModalVisible] = useState(false);
+// //   const [selectedOrderId, setSelectedOrderId] = useState(null);
+// //   const [selectedCategory, setSelectedCategory] = useState("not picked up");
+
+// //   const agentUid = auth.currentUser?.uid;
+
+// //   useEffect(() => {
+// //     if (!agentUid) {
+// //       Toast.show({ type: "error", text1: "Not signed in" });
+// //       setLoading(false);
+// //       return;
+// //     }
+// //     fetchOrders();
+// //   }, [agentUid]);
+
+// //   const fetchOrders = async () => {
+// //     setLoading(true);
+// //     try {
+// //       const q = query(
+// //         collection(db, "food_ordered"),
+// //         where("deliveryAgentId", "==", agentUid),
+// //         where("delivered", "==", false)
+// //       );
+
+// //       const snap = await getDocs(q);
+// //       const list = snap.docs.map((docSnap) => ({
+// //         id: docSnap.id,
+// //         ...docSnap.data(),
+// //       }));
+
+// //       setOrders(list);
+// //     } catch (error) {
+// //       console.error(error);
+// //       Toast.show({ type: "error", text1: "Failed to fetch orders" });
+// //     } finally {
+// //       setLoading(false);
+// //     }
+// //   };
+
+// //   const updateDeliveryStatus = async (orderId, status) => {
+// //     try {
+// //       const orderRef = doc(db, "food_ordered", orderId);
+// //       await updateDoc(orderRef, { delivery_status: status });
+
+// //       setOrders((prev) =>
+// //         prev.map((order) =>
+// //           order.id === orderId ? { ...order, delivery_status: status } : order
+// //         )
+// //       );
+
+// //       Toast.show({ type: "success", text1: "Status Updated", text2: status });
+// //     } catch (error) {
+// //       console.error(error);
+// //       Toast.show({ type: "error", text1: "Status update failed" });
+// //     } finally {
+// //       setStatusModalVisible(false);
+// //       setSelectedOrderId(null);
+// //     }
+// //   };
+
+// //   const markDelivered = async (orderId) => {
+// //     try {
+// //       await updateDoc(doc(db, "food_ordered", orderId), {
+// //         delivered: true,
+// //         delivery_status: "Delivered",
+// //       });
+
+// //       await updateDoc(doc(db, "delivery_agents", agentUid), {
+// //         completed_order: increment(1),
+// //       });
+
+// //       Toast.show({ type: "success", text1: "Order Delivered" });
+
+// //       setOrders((prev) => prev.filter((o) => o.id !== orderId));
+// //     } catch (err) {
+// //       console.error(err);
+// //       Toast.show({ type: "error", text1: "Delivery update failed" });
+// //     }
+// //   };
+
+// //   const filteredOrders = orders.filter((order) => {
+// //     const status = order.delivery_status ?? "not picked up";
+// //     return status === selectedCategory;
+// //   });
+
+// //   const renderItem = ({ item }) => (
+// //     <View style={styles.card}>
+// //       <View style={styles.row}>
+// //         <Text style={styles.label}>Food:</Text>
+// //         <Text style={styles.value}>{item.foodName || "Unknown"}</Text>
+// //       </View>
+
+// //       <View style={styles.row}>
+// //         <Text style={styles.label}>Quantity:</Text>
+// //         <Text style={styles.value}>{item.quantity ?? "0"}</Text>
+// //       </View>
+
+// //       {item.place && (
+// //         <View style={styles.row}>
+// //           <Text style={styles.label}>Place:</Text>
+// //           <Text style={styles.value}>{item.place}</Text>
+// //         </View>
+// //       )}
+
+// //       <View style={styles.row}>
+// //         <Text style={styles.label}>Phone No:</Text>
+// //         <Text style={styles.value}>{item.phoneno || "No number"}</Text>
+// //       </View>
+
+// //       <View style={styles.row}>
+// //         <Text style={styles.label}>Ordered At:</Text>
+// //         <Text style={styles.value}>{formatOrderDate(item.createdAt)}</Text>
+// //       </View>
+
+// //       <Text style={styles.status}>
+// //         Status: {item.delivery_status || "not picked up"}
+// //       </Text>
+
+// //       <View style={styles.btncontainer}>
+// //         <TouchableOpacity
+// //           style={styles.button2}
+// //           onPress={() => {
+// //             setSelectedOrderId(item.id);
+// //             setStatusModalVisible(true);
+// //           }}
+// //         >
+// //           <Ionicons name="chevron-down" size={18} color="#fff" />
+// //           <Text style={styles.buttonText}>UPDATE STATUS</Text>
+// //         </TouchableOpacity>
+
+// //         <TouchableOpacity
+// //           style={styles.button}
+// //           onPress={() => markDelivered(item.id)}
+// //         >
+// //           <Ionicons name="checkmark-circle-outline" size={18} color="#fff" />
+// //           <Text style={styles.buttonText}>MARK DELIVERED</Text>
+// //         </TouchableOpacity>
+// //       </View>
+// //     </View>
+// //   );
+
+// //   return (
+// //     <SafeAreaView style={styles.container}>
+// //       <Text style={styles.title}>Orders to Deliver</Text>
+
+// //       <View style={styles.tabs}>
+// //         {DELIVERY_STATUSES.map((cat) => (
+// //           <TouchableOpacity
+// //             key={cat}
+// //             style={[styles.tab, selectedCategory === cat && styles.activeTab]}
+// //             onPress={() => setSelectedCategory(cat)}
+// //           >
+// //             <Text
+// //               style={[
+// //                 styles.tabText,
+// //                 selectedCategory === cat && styles.activeTabText,
+// //               ]}
+// //             >
+// //               {cat}
+// //             </Text>
+// //           </TouchableOpacity>
+// //         ))}
+// //       </View>
+
+// //       {loading ? (
+// //         <ActivityIndicator size="large" color={ORANGE} />
+// //       ) : filteredOrders.length === 0 ? (
+// //         <Text style={styles.emptyText}>No orders in this category</Text>
+// //       ) : (
+// //         <FlatList
+// //           data={filteredOrders}
+// //           keyExtractor={(item) => item.id}
+// //           renderItem={renderItem}
+// //           refreshing={loading}
+// //           onRefresh={fetchOrders}
+// //         />
+// //       )}
+
+// //       <Modal transparent visible={statusModalVisible} animationType="fade">
+// //         <View style={styles.modalOverlay}>
+// //           <View style={styles.modalBox}>
+// //             {DELIVERY_STATUSES.map((status) => (
+// //               <TouchableOpacity
+// //                 key={status}
+// //                 style={styles.modalItem}
+// //                 onPress={() => updateDeliveryStatus(selectedOrderId, status)}
+// //               >
+// //                 <Text style={styles.modalText}>{status}</Text>
+// //               </TouchableOpacity>
+// //             ))}
+
+// //             <TouchableOpacity
+// //               style={styles.cancelBtn}
+// //               onPress={() => setStatusModalVisible(false)}
+// //             >
+// //               <Text style={{ color: "red" }}>Cancel</Text>
+// //             </TouchableOpacity>
+// //           </View>
+// //         </View>
+// //       </Modal>
+
+// //       <Toast />
+// //     </SafeAreaView>
+// //   );
+// // }
+
 // import { useEffect, useState } from "react";
 // import { router } from "expo-router";
 // import {
@@ -35,20 +316,13 @@
 // // Safe date parsing
 // const parseOrderDate = (createdAt) => {
 //   if (!createdAt) return null;
-
 //   try {
-//     if (createdAt?.seconds) {
-//       return new Date(createdAt.seconds * 1000);
-//     }
-
+//     if (createdAt?.seconds) return new Date(createdAt.seconds * 1000);
 //     if (typeof createdAt === "string") {
-//       const dateObj = new Date(createdAt);
-//       if (isNaN(dateObj.getTime())) return null;
-//       return dateObj;
+//       const d = new Date(createdAt);
+//       return isNaN(d.getTime()) ? null : d;
 //     }
-
 //     if (createdAt instanceof Date) return createdAt;
-
 //     return null;
 //   } catch (err) {
 //     console.warn("Invalid createdAt value:", createdAt, err);
@@ -59,7 +333,6 @@
 // const formatOrderDate = (createdAt) => {
 //   const date = parseOrderDate(createdAt);
 //   if (!date) return "Unknown time";
-
 //   return date.toLocaleString("en-IN", {
 //     day: "2-digit",
 //     month: "short",
@@ -91,21 +364,45 @@
 //   const fetchOrders = async () => {
 //     setLoading(true);
 //     try {
+//       // ── Query "orders" collection assigned to this agent, not yet delivered ──
 //       const q = query(
-//         collection(db, "food_ordered"),
+//         collection(db, "orders"),
 //         where("deliveryAgentId", "==", agentUid),
 //         where("delivered", "==", false)
 //       );
 
 //       const snap = await getDocs(q);
-//       const list = snap.docs.map((docSnap) => ({
-//         id: docSnap.id,
-//         ...docSnap.data(),
-//       }));
 
+//       // Normalize nested "orders" structure to flat shape used by the UI
+//       const list = snap.docs.map((docSnap) => {
+//         const data = docSnap.data();
+//         const firstItem = data.items?.[0] || {};
+//         return {
+//           id:              docSnap.id,
+//           // ── item fields ───────────────────────────────────────────
+//           foodName:        firstItem.name      || "Unknown",
+//           quantity:        firstItem.quantity  || 0,
+//           // ── delivery fields ───────────────────────────────────────
+//           place:           data.deliveryDetails?.place         || "",
+//           toBeDelivered:   data.deliveryDetails?.toBeDelivered ?? true,
+//           // ── user fields ───────────────────────────────────────────
+//           username:        data.userName       || data.userEmail || "Unknown",
+//           phoneno:         data.phoneNumber    || data.phone     || null,
+//           // ── assignment fields (written by AssignHelpers) ──────────
+//           deliveryAgentId:   data.deliveryAgentId   || null,
+//           deliveryAgentName: data.deliveryAgentName || null,
+//           delivery_status:   data.delivery_status   || "not picked up",
+//           delivered:         data.delivered          || false,
+//           // ── meta ─────────────────────────────────────────────────
+//           orderNumber:     data.orderNumber    || docSnap.id,
+//           createdAt:       data.createdAt      || null,
+//         };
+//       });
+
+//       console.log(`[DeliveryOrders] Fetched ${list.length} order(s) for agent ${agentUid}`);
 //       setOrders(list);
 //     } catch (error) {
-//       console.error(error);
+//       console.error("[DeliveryOrders] fetchOrders error:", error);
 //       Toast.show({ type: "error", text1: "Failed to fetch orders" });
 //     } finally {
 //       setLoading(false);
@@ -114,8 +411,8 @@
 
 //   const updateDeliveryStatus = async (orderId, status) => {
 //     try {
-//       const orderRef = doc(db, "food_ordered", orderId);
-//       await updateDoc(orderRef, { delivery_status: status });
+//       // ✅ Updated: was "food_ordered", now "orders"
+//       await updateDoc(doc(db, "orders", orderId), { delivery_status: status });
 
 //       setOrders((prev) =>
 //         prev.map((order) =>
@@ -125,7 +422,7 @@
 
 //       Toast.show({ type: "success", text1: "Status Updated", text2: status });
 //     } catch (error) {
-//       console.error(error);
+//       console.error("[DeliveryOrders] updateDeliveryStatus error:", error);
 //       Toast.show({ type: "error", text1: "Status update failed" });
 //     } finally {
 //       setStatusModalVisible(false);
@@ -135,8 +432,9 @@
 
 //   const markDelivered = async (orderId) => {
 //     try {
-//       await updateDoc(doc(db, "food_ordered", orderId), {
-//         delivered: true,
+//       // ✅ Updated: was "food_ordered", now "orders"
+//       await updateDoc(doc(db, "orders", orderId), {
+//         delivered:       true,
 //         delivery_status: "Delivered",
 //       });
 
@@ -145,10 +443,9 @@
 //       });
 
 //       Toast.show({ type: "success", text1: "Order Delivered" });
-
 //       setOrders((prev) => prev.filter((o) => o.id !== orderId));
 //     } catch (err) {
-//       console.error(err);
+//       console.error("[DeliveryOrders] markDelivered error:", err);
 //       Toast.show({ type: "error", text1: "Delivery update failed" });
 //     }
 //   };
@@ -160,22 +457,29 @@
 
 //   const renderItem = ({ item }) => (
 //     <View style={styles.card}>
+//       <Text style={styles.orderNumber}>#{item.orderNumber}</Text>
+
+//       <View style={styles.row}>
+//         <Text style={styles.label}>Customer:</Text>
+//         <Text style={styles.value}>{item.username}</Text>
+//       </View>
+
 //       <View style={styles.row}>
 //         <Text style={styles.label}>Food:</Text>
-//         <Text style={styles.value}>{item.foodName || "Unknown"}</Text>
+//         <Text style={styles.value}>{item.foodName}</Text>
 //       </View>
 
 //       <View style={styles.row}>
 //         <Text style={styles.label}>Quantity:</Text>
-//         <Text style={styles.value}>{item.quantity ?? "0"}</Text>
+//         <Text style={styles.value}>{item.quantity}</Text>
 //       </View>
 
-//       {item.place && (
+//       {item.place ? (
 //         <View style={styles.row}>
 //           <Text style={styles.label}>Place:</Text>
 //           <Text style={styles.value}>{item.place}</Text>
 //         </View>
-//       )}
+//       ) : null}
 
 //       <View style={styles.row}>
 //         <Text style={styles.label}>Phone No:</Text>
@@ -280,31 +584,22 @@
 // }
 
 import { useEffect, useState } from "react";
-import { router } from "expo-router";
 import {
-  ActivityIndicator,
-  FlatList,
-  Text,
-  View,
-  TouchableOpacity,
-  Modal,
+  ActivityIndicator, FlatList, Text,
+  View, TouchableOpacity, Modal, StyleSheet,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-
-import { OrdersStyles as styles, ORANGE } from "@/assets/src/styles/OrdersStyles";
-
 import Toast from "react-native-toast-message";
 import {
-  collection,
-  getDocs,
-  query,
-  where,
-  updateDoc,
-  doc,
-  increment,
+  collection, getDocs, query, where,
+  updateDoc, doc, increment,
 } from "firebase/firestore";
 import { auth, db } from "../../../firebaseConfig";
 import { Ionicons } from "@expo/vector-icons";
+
+import { OrdersStyles as styles } from "@/assets/src/styles/OrdersStyles";
+
+const ORANGE = "#FF7A00";
 
 const DELIVERY_STATUSES = [
   "not picked up",
@@ -313,7 +608,13 @@ const DELIVERY_STATUSES = [
   "Near your location",
 ];
 
-// Safe date parsing
+const STATUS_META = {
+  "not picked up":      { icon: "hourglass-outline",  color: "#94A3B8", short: "Waiting" },
+  "Picked up":          { icon: "bag-handle-outline", color: "#3B82F6", short: "Picked"  },
+  "On my way":          { icon: "navigate-outline",   color: "#8B5CF6", short: "Moving"  },
+  "Near your location": { icon: "location-outline",   color: ORANGE,    short: "Near"    },
+};
+
 const parseOrderDate = (createdAt) => {
   if (!createdAt) return null;
   try {
@@ -324,31 +625,24 @@ const parseOrderDate = (createdAt) => {
     }
     if (createdAt instanceof Date) return createdAt;
     return null;
-  } catch (err) {
-    console.warn("Invalid createdAt value:", createdAt, err);
-    return null;
-  }
+  } catch { return null; }
 };
 
 const formatOrderDate = (createdAt) => {
   const date = parseOrderDate(createdAt);
   if (!date) return "Unknown time";
   return date.toLocaleString("en-IN", {
-    day: "2-digit",
-    month: "short",
-    year: "numeric",
-    hour: "2-digit",
-    minute: "2-digit",
-    hour12: true,
+    day: "2-digit", month: "short", year: "numeric",
+    hour: "2-digit", minute: "2-digit", hour12: true,
   });
 };
 
 export default function DeliveryOrders() {
-  const [orders, setOrders] = useState([]);
-  const [loading, setLoading] = useState(true);
+  const [orders, setOrders]                         = useState([]);
+  const [loading, setLoading]                       = useState(true);
   const [statusModalVisible, setStatusModalVisible] = useState(false);
-  const [selectedOrderId, setSelectedOrderId] = useState(null);
-  const [selectedCategory, setSelectedCategory] = useState("not picked up");
+  const [selectedOrderId, setSelectedOrderId]       = useState(null);
+  const [selectedCategory, setSelectedCategory]     = useState("not picked up");
 
   const agentUid = auth.currentUser?.uid;
 
@@ -364,42 +658,28 @@ export default function DeliveryOrders() {
   const fetchOrders = async () => {
     setLoading(true);
     try {
-      // ── Query "orders" collection assigned to this agent, not yet delivered ──
       const q = query(
         collection(db, "orders"),
         where("deliveryAgentId", "==", agentUid),
         where("delivered", "==", false)
       );
-
       const snap = await getDocs(q);
-
-      // Normalize nested "orders" structure to flat shape used by the UI
       const list = snap.docs.map((docSnap) => {
         const data = docSnap.data();
         const firstItem = data.items?.[0] || {};
         return {
           id:              docSnap.id,
-          // ── item fields ───────────────────────────────────────────
-          foodName:        firstItem.name      || "Unknown",
-          quantity:        firstItem.quantity  || 0,
-          // ── delivery fields ───────────────────────────────────────
-          place:           data.deliveryDetails?.place         || "",
-          toBeDelivered:   data.deliveryDetails?.toBeDelivered ?? true,
-          // ── user fields ───────────────────────────────────────────
-          username:        data.userName       || data.userEmail || "Unknown",
-          phoneno:         data.phoneNumber    || data.phone     || null,
-          // ── assignment fields (written by AssignHelpers) ──────────
-          deliveryAgentId:   data.deliveryAgentId   || null,
-          deliveryAgentName: data.deliveryAgentName || null,
-          delivery_status:   data.delivery_status   || "not picked up",
-          delivered:         data.delivered          || false,
-          // ── meta ─────────────────────────────────────────────────
-          orderNumber:     data.orderNumber    || docSnap.id,
-          createdAt:       data.createdAt      || null,
+          foodName:        firstItem.name     || "Unknown",
+          quantity:        firstItem.quantity || 0,
+          place:           data.deliveryDetails?.place || "",
+          username:        data.userName      || data.userEmail || "Unknown",
+          phoneno:         data.phoneNumber   || data.phone     || null,
+          delivery_status: data.delivery_status || "not picked up",
+          delivered:       data.delivered        || false,
+          orderNumber:     data.orderNumber   || docSnap.id,
+          createdAt:       data.createdAt     || null,
         };
       });
-
-      console.log(`[DeliveryOrders] Fetched ${list.length} order(s) for agent ${agentUid}`);
       setOrders(list);
     } catch (error) {
       console.error("[DeliveryOrders] fetchOrders error:", error);
@@ -411,19 +691,11 @@ export default function DeliveryOrders() {
 
   const updateDeliveryStatus = async (orderId, status) => {
     try {
-      // ✅ Updated: was "food_ordered", now "orders"
       await updateDoc(doc(db, "orders", orderId), { delivery_status: status });
-
-      setOrders((prev) =>
-        prev.map((order) =>
-          order.id === orderId ? { ...order, delivery_status: status } : order
-        )
-      );
-
-      Toast.show({ type: "success", text1: "Status Updated", text2: status });
-    } catch (error) {
-      console.error("[DeliveryOrders] updateDeliveryStatus error:", error);
-      Toast.show({ type: "error", text1: "Status update failed" });
+      setOrders(prev => prev.map(o => o.id === orderId ? { ...o, delivery_status: status } : o));
+      Toast.show({ type: "success", text1: "Status updated", text2: status });
+    } catch {
+      Toast.show({ type: "error", text1: "Update failed" });
     } finally {
       setStatusModalVisible(false);
       setSelectedOrderId(null);
@@ -432,153 +704,166 @@ export default function DeliveryOrders() {
 
   const markDelivered = async (orderId) => {
     try {
-      // ✅ Updated: was "food_ordered", now "orders"
       await updateDoc(doc(db, "orders", orderId), {
-        delivered:       true,
-        delivery_status: "Delivered",
+        delivered: true, delivery_status: "Delivered",
       });
-
       await updateDoc(doc(db, "delivery_agents", agentUid), {
         completed_order: increment(1),
       });
-
-      Toast.show({ type: "success", text1: "Order Delivered" });
-      setOrders((prev) => prev.filter((o) => o.id !== orderId));
-    } catch (err) {
-      console.error("[DeliveryOrders] markDelivered error:", err);
+      Toast.show({ type: "success", text1: "Order delivered!" });
+      setOrders(prev => prev.filter(o => o.id !== orderId));
+    } catch {
       Toast.show({ type: "error", text1: "Delivery update failed" });
     }
   };
 
-  const filteredOrders = orders.filter((order) => {
-    const status = order.delivery_status ?? "not picked up";
-    return status === selectedCategory;
-  });
-
-  const renderItem = ({ item }) => (
-    <View style={styles.card}>
-      <Text style={styles.orderNumber}>#{item.orderNumber}</Text>
-
-      <View style={styles.row}>
-        <Text style={styles.label}>Customer:</Text>
-        <Text style={styles.value}>{item.username}</Text>
-      </View>
-
-      <View style={styles.row}>
-        <Text style={styles.label}>Food:</Text>
-        <Text style={styles.value}>{item.foodName}</Text>
-      </View>
-
-      <View style={styles.row}>
-        <Text style={styles.label}>Quantity:</Text>
-        <Text style={styles.value}>{item.quantity}</Text>
-      </View>
-
-      {item.place ? (
-        <View style={styles.row}>
-          <Text style={styles.label}>Place:</Text>
-          <Text style={styles.value}>{item.place}</Text>
-        </View>
-      ) : null}
-
-      <View style={styles.row}>
-        <Text style={styles.label}>Phone No:</Text>
-        <Text style={styles.value}>{item.phoneno || "No number"}</Text>
-      </View>
-
-      <View style={styles.row}>
-        <Text style={styles.label}>Ordered At:</Text>
-        <Text style={styles.value}>{formatOrderDate(item.createdAt)}</Text>
-      </View>
-
-      <Text style={styles.status}>
-        Status: {item.delivery_status || "not picked up"}
-      </Text>
-
-      <View style={styles.btncontainer}>
-        <TouchableOpacity
-          style={styles.button2}
-          onPress={() => {
-            setSelectedOrderId(item.id);
-            setStatusModalVisible(true);
-          }}
-        >
-          <Ionicons name="chevron-down" size={18} color="#fff" />
-          <Text style={styles.buttonText}>UPDATE STATUS</Text>
-        </TouchableOpacity>
-
-        <TouchableOpacity
-          style={styles.button}
-          onPress={() => markDelivered(item.id)}
-        >
-          <Ionicons name="checkmark-circle-outline" size={18} color="#fff" />
-          <Text style={styles.buttonText}>MARK DELIVERED</Text>
-        </TouchableOpacity>
-      </View>
-    </View>
+  const filteredOrders = orders.filter(o =>
+    (o.delivery_status ?? "not picked up") === selectedCategory
   );
+
+  const renderItem = ({ item }) => {
+    const meta = STATUS_META[item.delivery_status] ?? STATUS_META["not picked up"];
+    return (
+      <View style={styles.card}>
+        {/* Order number + status */}
+        <View style={styles.cardHeader}>
+          <Text style={styles.orderNum}>#{item.orderNumber}</Text>
+          <View style={styles.statusPill}>
+            <Ionicons name={meta.icon} size={12} color={meta.color} />
+            <Text style={[styles.statusText, { color: meta.color }]}>{meta.short}</Text>
+          </View>
+        </View>
+
+        <View style={styles.divider} />
+
+        {/* Details */}
+        <Row icon="person-outline"    label="Customer" value={item.username} />
+        <Row icon="fast-food-outline" label="Item"     value={`${item.foodName} × ${item.quantity}`} orange />
+        <Row icon="location-outline"  label="Place"    value={item.place || "—"} />
+        <Row icon="call-outline"      label="Phone"    value={item.phoneno || "No number"} />
+        <Row icon="time-outline"      label="Ordered"  value={formatOrderDate(item.createdAt)} />
+
+        {/* Buttons */}
+        <View style={styles.btnRow}>
+          <TouchableOpacity
+            style={styles.btnOutline}
+            onPress={() => { setSelectedOrderId(item.id); setStatusModalVisible(true); }}
+          >
+            <Ionicons name="swap-vertical-outline" size={15} color={ORANGE} />
+            <Text style={styles.btnOutlineText}>Update Status</Text>
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            style={styles.btnFill}
+            onPress={() => markDelivered(item.id)}
+          >
+            <Ionicons name="checkmark-circle-outline" size={15} color="#fff" />
+            <Text style={styles.btnFillText}>Mark Delivered</Text>
+          </TouchableOpacity>
+        </View>
+      </View>
+    );
+  };
 
   return (
     <SafeAreaView style={styles.container}>
-      <Text style={styles.title}>Orders to Deliver</Text>
 
-      <View style={styles.tabs}>
-        {DELIVERY_STATUSES.map((cat) => (
-          <TouchableOpacity
-            key={cat}
-            style={[styles.tab, selectedCategory === cat && styles.activeTab]}
-            onPress={() => setSelectedCategory(cat)}
-          >
-            <Text
-              style={[
-                styles.tabText,
-                selectedCategory === cat && styles.activeTabText,
-              ]}
-            >
-              {cat}
-            </Text>
-          </TouchableOpacity>
-        ))}
+      {/* Header */}
+      <View style={styles.header}>
+        <Text style={styles.title}>My Deliveries</Text>
+        <TouchableOpacity onPress={fetchOrders}>
+          <Ionicons name="refresh-outline" size={22} color={ORANGE} />
+        </TouchableOpacity>
       </View>
 
+      {/* Tabs */}
+      <View style={styles.tabs}>
+        {DELIVERY_STATUSES.map(cat => {
+          const active = selectedCategory === cat;
+          const count  = orders.filter(o => (o.delivery_status ?? "not picked up") === cat).length;
+          return (
+            <TouchableOpacity
+              key={cat}
+              style={[styles.tab, active && styles.tabActive]}
+              onPress={() => setSelectedCategory(cat)}
+            >
+              <Text style={[styles.tabText, active && styles.tabTextActive]}>
+                {STATUS_META[cat].short}{count > 0 ? ` (${count})` : ""}
+              </Text>
+            </TouchableOpacity>
+          );
+        })}
+      </View>
+
+      {/* List */}
       {loading ? (
-        <ActivityIndicator size="large" color={ORANGE} />
+        <View style={styles.centered}>
+          <ActivityIndicator size="large" color={ORANGE} />
+          <Text style={styles.hint}>Loading orders…</Text>
+        </View>
       ) : filteredOrders.length === 0 ? (
-        <Text style={styles.emptyText}>No orders in this category</Text>
+        <View style={styles.centered}>
+          <Ionicons name="checkmark-done-circle-outline" size={52} color="#FFD2A6" />
+          <Text style={styles.hint}>No orders here</Text>
+        </View>
       ) : (
         <FlatList
           data={filteredOrders}
-          keyExtractor={(item) => item.id}
+          keyExtractor={item => item.id}
           renderItem={renderItem}
           refreshing={loading}
           onRefresh={fetchOrders}
+          contentContainerStyle={{ padding: 16, paddingBottom: 40 }}
         />
       )}
 
-      <Modal transparent visible={statusModalVisible} animationType="fade">
-        <View style={styles.modalOverlay}>
-          <View style={styles.modalBox}>
-            {DELIVERY_STATUSES.map((status) => (
-              <TouchableOpacity
-                key={status}
-                style={styles.modalItem}
-                onPress={() => updateDeliveryStatus(selectedOrderId, status)}
-              >
-                <Text style={styles.modalText}>{status}</Text>
-              </TouchableOpacity>
-            ))}
-
-            <TouchableOpacity
-              style={styles.cancelBtn}
-              onPress={() => setStatusModalVisible(false)}
-            >
-              <Text style={{ color: "red" }}>Cancel</Text>
+      {/* Status modal */}
+      <Modal transparent visible={statusModalVisible} animationType="slide">
+        <TouchableOpacity
+          style={styles.backdrop}
+          activeOpacity={1}
+          onPress={() => setStatusModalVisible(false)}
+        >
+          <View style={styles.sheet}>
+            <View style={styles.handle} />
+            <Text style={styles.sheetTitle}>Update Status</Text>
+            {DELIVERY_STATUSES.map(status => {
+              const meta      = STATUS_META[status];
+              const isCurrent = orders.find(o => o.id === selectedOrderId)?.delivery_status === status;
+              return (
+                <TouchableOpacity
+                  key={status}
+                  style={[styles.sheetItem, isCurrent && styles.sheetItemActive]}
+                  onPress={() => updateDeliveryStatus(selectedOrderId, status)}
+                >
+                  <Ionicons name={meta.icon} size={18} color={isCurrent ? ORANGE : meta.color} />
+                  <Text style={[styles.sheetItemText, isCurrent && { color: ORANGE, fontWeight: "700" }]}>
+                    {status}
+                  </Text>
+                  {isCurrent && <Ionicons name="checkmark" size={16} color={ORANGE} />}
+                </TouchableOpacity>
+              );
+            })}
+            <TouchableOpacity style={styles.sheetCancel} onPress={() => setStatusModalVisible(false)}>
+              <Text style={styles.sheetCancelText}>Cancel</Text>
             </TouchableOpacity>
           </View>
-        </View>
+        </TouchableOpacity>
       </Modal>
 
       <Toast />
     </SafeAreaView>
+  );
+}
+
+function Row({ icon, label, value, orange }) {
+  return (
+    <View style={styles.row}>
+      <Ionicons name={icon} size={14} color="#bbb" />
+      <Text style={styles.rowLabel}>{label}</Text>
+      <Text style={[styles.rowValue, orange && { color: ORANGE }]} numberOfLines={1}>
+        {value}
+      </Text>
+    </View>
   );
 }

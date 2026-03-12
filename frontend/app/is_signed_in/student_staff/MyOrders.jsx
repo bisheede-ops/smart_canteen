@@ -1,7 +1,7 @@
 import { useEffect, useState, useCallback } from "react";
 import {
   ActivityIndicator, FlatList, Text,
-  View, StyleSheet, TouchableOpacity,
+  View, StyleSheet, TouchableOpacity, Image,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import Ionicons from "@expo/vector-icons/Ionicons";
@@ -18,7 +18,6 @@ const STATUS_CONFIG = {
   ready:     { color: "#10b981", bg: "#ecfdf5", icon: "bag-check-outline",         label: "Ready"     },
 };
 
-// Delivery status shown on the card
 const DELIVERY_STATUS_CONFIG = {
   "not picked up":      { color: "#f59e0b", bg: "#fffbeb", icon: "time-outline",          label: "Waiting for agent"   },
   "Picked up":          { color: "#3b82f6", bg: "#eff6ff", icon: "bicycle-outline",       label: "Picked up"           },
@@ -38,8 +37,30 @@ const formatDate = (ts) => {
 
 export default function MyOrders() {
   const router = useRouter();
-  const [orders, setOrders]   = useState([]);
-  const [loading, setLoading] = useState(true);
+  const [orders, setOrders]     = useState([]);
+  const [loading, setLoading]   = useState(true);
+  // Map of menu item name (lowercase) → image URL
+  const [menuImages, setMenuImages] = useState({});
+  const [imageLoading, setImageLoading] = useState({});
+
+  // Fetch menu once to get image URLs
+  const fetchMenuImages = useCallback(async () => {
+    console.log("[MyOrders] Fetching menu images...");
+    try {
+      const snap = await getDocs(collection(db, "menu"));
+      const map = {};
+      snap.docs.forEach(d => {
+        const data = d.data();
+        if (data.name && data.image) {
+          map[data.name.toLowerCase()] = data.image;
+        }
+      });
+      console.log(`[MyOrders] Loaded images for ${Object.keys(map).length} menu items.`);
+      setMenuImages(map);
+    } catch (err) {
+      console.error("[MyOrders] ERROR fetching menu images:", err);
+    }
+  }, []);
 
   const fetchOrders = useCallback(async () => {
     const uid = auth.currentUser?.uid;
@@ -61,8 +82,6 @@ export default function MyOrders() {
       const snap = await getDocs(q);
       const all  = snap.docs.map(d => ({ id: d.id, ...d.data() }));
 
-      // Filter out orders that have been delivered or picked up
-      // These should only appear in OrderHistory
       const active = all.filter(o => {
         const deliveryDone = o.delivery_status?.toLowerCase() === "delivered";
         const pickedUp     = o.status === "picked_up";
@@ -80,6 +99,7 @@ export default function MyOrders() {
   }, []);
 
   useEffect(() => {
+    fetchMenuImages();
     fetchOrders();
   }, []);
 
@@ -88,24 +108,66 @@ export default function MyOrders() {
     const itemInfo   = item.items?.[0];
     const isDelivery = item.deliveryDetails?.toBeDelivered;
 
-    // Delivery progress config
     const deliveryStatus     = item.delivery_status;
     const deliveryStatusConf = deliveryStatus
       ? DELIVERY_STATUS_CONFIG[deliveryStatus]
       : null;
 
+    // Look up image from menu map using item name
+    const imageUrl = itemInfo?.name
+      ? menuImages[itemInfo.name.toLowerCase()]
+      : null;
+
+    const imgKey = item.id;
+
     return (
       <View style={styles.card}>
+
+        {/* ── Food image banner ── */}
+        <View style={styles.imageBanner}>
+          {imageUrl ? (
+            <>
+              <Image
+                source={{ uri: imageUrl }}
+                style={styles.foodImage}
+                onLoadStart={() =>
+                  setImageLoading(prev => ({ ...prev, [imgKey]: true }))
+                }
+                onLoadEnd={() =>
+                  setImageLoading(prev => ({ ...prev, [imgKey]: false }))
+                }
+                onError={() =>
+                  setImageLoading(prev => ({ ...prev, [imgKey]: false }))
+                }
+              />
+              {imageLoading[imgKey] && (
+                <ActivityIndicator
+                  size="small"
+                  color={ORANGE}
+                  style={StyleSheet.absoluteFill}
+                />
+              )}
+              {/* Gradient overlay for text legibility */}
+              <View style={styles.imageOverlay} />
+            </>
+          ) : (
+            <View style={styles.noImageBox}>
+              <Ionicons name="fast-food-outline" size={40} color="#FFD2A6" />
+            </View>
+          )}
+
+          {/* Status badge floated on image */}
+          <View style={[styles.statusBadge, { backgroundColor: status.bg }]}>
+            <Ionicons name={status.icon} size={13} color={status.color} />
+            <Text style={[styles.statusText, { color: status.color }]}>{status.label}</Text>
+          </View>
+        </View>
 
         {/* Header */}
         <View style={styles.cardHeader}>
           <View>
             <Text style={styles.orderNumber}>{item.orderNumber || "Order"}</Text>
             <Text style={styles.orderDate}>{formatDate(item.createdAt)}</Text>
-          </View>
-          <View style={[styles.statusBadge, { backgroundColor: status.bg }]}>
-            <Ionicons name={status.icon} size={13} color={status.color} />
-            <Text style={[styles.statusText, { color: status.color }]}>{status.label}</Text>
           </View>
         </View>
 
@@ -150,7 +212,7 @@ export default function MyOrders() {
           </View>
         ) : null}
 
-        {/* ── Delivery status tracker (only for delivery orders) ── */}
+        {/* Delivery status tracker */}
         {isDelivery && (
           <View style={styles.deliveryTracker}>
             <Text style={styles.deliveryTrackerTitle}>Delivery Status</Text>
@@ -163,7 +225,6 @@ export default function MyOrders() {
                 </Text>
               </View>
             ) : (
-              // No agent assigned yet
               <View style={[styles.deliveryStatusRow, { backgroundColor: "#f5f5f5" }]}>
                 <Ionicons name="hourglass-outline" size={16} color="#aaa" />
                 <Text style={[styles.deliveryStatusText, { color: "#aaa" }]}>
@@ -292,33 +353,56 @@ const styles = StyleSheet.create({
   countText: { fontSize: 12, color: "#bbb", marginLeft: 18, marginBottom: 4 },
 
   card: {
-    backgroundColor: "#fff", borderRadius: 16, padding: 16, marginVertical: 8,
+    backgroundColor: "#fff", borderRadius: 16, marginVertical: 8,
     shadowColor: "#000", shadowOpacity: 0.05,
     shadowRadius: 8, shadowOffset: { width: 0, height: 2 }, elevation: 2,
+    overflow: "hidden",
   },
-  cardHeader: {
-    flexDirection: "row", justifyContent: "space-between",
-    alignItems: "flex-start", marginBottom: 10,
-  },
-  orderNumber: { fontSize: 14, fontWeight: "700", color: "#1a1a1a" },
-  orderDate:   { fontSize: 11, color: "#aaa", marginTop: 2 },
 
+  // ── Image banner ──────────────────────────────────────────────
+  imageBanner: {
+    height: 140, width: "100%",
+    backgroundColor: "#FFF1E4",
+    justifyContent: "center", alignItems: "center",
+  },
+  foodImage: {
+    ...StyleSheet.absoluteFillObject,
+    resizeMode: "cover",
+  },
+  imageOverlay: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: "rgba(0,0,0,0.18)",
+  },
+  noImageBox: {
+    flex: 1, justifyContent: "center", alignItems: "center",
+  },
   statusBadge: {
+    position: "absolute", top: 10, right: 10,
     flexDirection: "row", alignItems: "center", gap: 4,
     paddingHorizontal: 10, paddingVertical: 5, borderRadius: 20,
   },
   statusText: { fontSize: 12, fontWeight: "700" },
 
-  divider: { height: 1, backgroundColor: "#f5f5f5", marginBottom: 10 },
+  // ── Card body ─────────────────────────────────────────────────
+  cardHeader: {
+    paddingHorizontal: 16, paddingTop: 12, paddingBottom: 6,
+  },
+  orderNumber: { fontSize: 14, fontWeight: "700", color: "#1a1a1a" },
+  orderDate:   { fontSize: 11, color: "#aaa", marginTop: 2 },
 
-  infoRow: { flexDirection: "row", alignItems: "center", gap: 8, marginBottom: 8 },
+  divider: { height: 1, backgroundColor: "#f5f5f5", marginHorizontal: 16, marginBottom: 10 },
+
+  infoRow: {
+    flexDirection: "row", alignItems: "center", gap: 8,
+    marginBottom: 8, paddingHorizontal: 16,
+  },
   infoLabel: { flex: 1, fontSize: 13, color: "#999" },
   infoValue: { fontSize: 13, fontWeight: "600", color: "#1a1a1a", maxWidth: "55%", textAlign: "right" },
   amountText: { color: ORANGE, fontWeight: "700" },
 
-  // ── Delivery tracker ───────────────────────────────────────────
+  // ── Delivery tracker ──────────────────────────────────────────
   deliveryTracker: {
-    marginTop: 10, padding: 12,
+    marginHorizontal: 16, marginTop: 4, marginBottom: 12, padding: 12,
     backgroundColor: "#fafafa", borderRadius: 12,
     borderWidth: 1, borderColor: "#f0f0f0",
   },
@@ -332,24 +416,21 @@ const styles = StyleSheet.create({
   },
   deliveryStatusText: { fontSize: 13, fontWeight: "700" },
 
-  stepsRow: {
-    flexDirection: "row", alignItems: "center",
-  },
+  stepsRow: { flexDirection: "row", alignItems: "center" },
   stepItem: { flexDirection: "row", alignItems: "center", flex: 1 },
   stepDot: {
     width: 10, height: 10, borderRadius: 5,
     backgroundColor: "#e5e7eb", borderWidth: 2, borderColor: "#d1d5db",
   },
   stepDotDone: { backgroundColor: ORANGE, borderColor: ORANGE },
-  stepLine: {
-    flex: 1, height: 2, backgroundColor: "#e5e7eb",
-  },
+  stepLine: { flex: 1, height: 2, backgroundColor: "#e5e7eb" },
   stepLineDone: { backgroundColor: ORANGE },
 
   readyBanner: {
     flexDirection: "row", alignItems: "center", gap: 6,
     backgroundColor: "#ecfdf5", borderRadius: 10,
-    paddingHorizontal: 10, paddingVertical: 7, marginTop: 8,
+    paddingHorizontal: 10, paddingVertical: 7,
+    marginHorizontal: 16, marginBottom: 12, marginTop: 4,
   },
   readyBannerText: { fontSize: 12, color: "#10b981", fontWeight: "600" },
 

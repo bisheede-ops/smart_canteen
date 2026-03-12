@@ -21,8 +21,8 @@ const gridItems = [
     onPress: () => router.push("/is_signed_in/Admin/SpecialFood"),
   },
   {
-    title: "Pickup Orders",
-    subtitle: "Self pickup pending",
+    title: "Transactions",
+    subtitle: "View paid transactions",
     onPress: () => router.push("/is_signed_in/Admin/PickupOrders"),
   },
   {
