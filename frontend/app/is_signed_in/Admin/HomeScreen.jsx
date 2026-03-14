@@ -147,7 +147,7 @@
 // });
 import { Ionicons } from "@expo/vector-icons";
 import { router } from "expo-router";
-import { StyleSheet, Text, TouchableOpacity, View } from "react-native";
+import { StyleSheet, Text, TouchableOpacity, View,ScrollView} from "react-native";
 
 /* ---------- MAIN DASHBOARD ITEMS ---------- */
 const gridItems = [
@@ -187,6 +187,11 @@ const gridItems = [
     subtitle: "Select winnner",
     onPress: () => router.push("/is_signed_in/Admin/Reward"),
   },
+  {
+    title: "Notifications",
+    subtitle: "Give updates to users",
+    onPress: () => router.push("/is_signed_in/Admin/Notification"),
+  },
 ];
 
 export default function Index() {
@@ -196,7 +201,7 @@ export default function Index() {
 
   return (
     <View style={styles.container}>
-      {/* ---------- HEADER ---------- */}
+        {/* ---------- HEADER ---------- */}
       <View style={styles.header}>
         <Text style={styles.appName}>SmartCanteen</Text>
         <TouchableOpacity onPress={handleLogout} style={styles.logoutBtn}>
@@ -204,29 +209,31 @@ export default function Index() {
         </TouchableOpacity>
       </View>
 
-      {/* ---------- GRID (2 COLUMNS) ---------- */}
-      <View style={styles.grid}>
-        {gridItems.map((item, index) => (
-          <TouchableOpacity
-            key={index}
-            style={styles.card}
-            activeOpacity={0.85}
-            onPress={item.onPress}
-          >
-            <Text style={styles.cardTitle}>{item.title}</Text>
-            <Text style={styles.cardSubtitle}>{item.subtitle}</Text>
-          </TouchableOpacity>
-        ))}
-      </View>
+      <ScrollView showsVerticalScrollIndicator={false}> 
+        {/* ---------- GRID (2 COLUMNS) ---------- */}
+        <View style={styles.grid}>
+          {gridItems.map((item, index) => (
+            <TouchableOpacity
+              key={index}
+              style={styles.card}
+              activeOpacity={0.85}
+              onPress={item.onPress}
+            >
+              <Text style={styles.cardTitle}>{item.title}</Text>
+              <Text style={styles.cardSubtitle}>{item.subtitle}</Text>
+            </TouchableOpacity>
+          ))}
+        </View>
 
-      {/* ---------- ADD TOTAL TOKEN BUTTON ---------- */}
-      <TouchableOpacity
-        style={styles.bottomButton}
-        activeOpacity={0.9}
-        onPress={() => router.push("/is_signed_in/Admin/AddToken")}
-      >
-        <Text style={styles.bottomButtonText}>Add Total Token Count</Text>
-      </TouchableOpacity>
+        {/* ---------- ADD TOTAL TOKEN BUTTON ---------- */}
+        <TouchableOpacity
+          style={styles.bottomButton}
+          activeOpacity={0.9}
+          onPress={() => router.push("/is_signed_in/Admin/AddToken")}
+        >
+          <Text style={styles.bottomButtonText}>Add Total Token Count</Text>
+        </TouchableOpacity>
+      </ScrollView>
     </View>
   );
 }

@@ -1,3 +1,111 @@
+// import { StyleSheet } from "react-native";
+
+// const ORANGE = "#FF9800";
+
+// export const HomeStyles = StyleSheet.create({
+//   container: {
+//     flex: 1,
+//     backgroundColor: "#FFF7ED",
+//   },
+//   content: {
+//     padding: 20,
+//     paddingBottom: 90,
+//   },
+//   header: {
+//     marginBottom: 25,
+//   },
+//   welcome: {
+//     fontSize: 16,
+//     color: "#888",
+//   },
+//   name: {
+//     fontSize: 24,
+//     fontWeight: "bold",
+//     color: ORANGE,
+//   },
+//   role: {
+//     fontSize: 14,
+//     color: "#666",
+//     marginTop: 4,
+//   },
+//   actions: {
+    
+//     flexDirection: "row",
+//     justifyContent: "space-between",
+//     flexWrap: "wrap",
+//     rowGap: 16,        
+//     columnGap: 16,
+//     marginBottom: 30,
+    
+    
+//   },
+//   actionCard: {
+//     width: "47%",
+//     backgroundColor: "#FFFFFF",
+//     padding: 22,
+//     borderRadius: 14,
+//     alignItems: "center",
+//     elevation: 3,
+    
+   
+//   },
+//   actionText: {
+//     marginTop: 10,
+//     fontSize: 14,
+//     fontWeight: "600",
+//     color: "#333",
+//     textAlign: "center",
+//   },
+//   section: {
+//     marginBottom: 20,
+//   },
+//   sectionTitle: {
+//     fontSize: 18,
+//     fontWeight: "bold",
+//     marginBottom: 10,
+//     color: "#333",
+//   },
+//   foodCard: {
+//     backgroundColor: "#FFFFFF",
+//     padding: 15,
+//     borderRadius: 12,
+//     marginBottom: 10,
+//     flexDirection: "row",
+//     justifyContent: "space-between",
+//     elevation: 2,
+//   },
+//   foodName: {
+//     fontSize: 15,
+//   },
+//   foodPrice: {
+//     fontSize: 15,
+//     fontWeight: "bold",
+//     color: ORANGE,
+//   },
+//   navbar: {
+//     flexDirection: "row",
+//     justifyContent: "space-around",
+//     alignItems: "center",
+//     height: 65,
+//     backgroundColor: "#FFFFFF",
+//     borderTopWidth: 1,
+//     borderTopColor: "#FFE0B2",
+//     position: "absolute",
+//     bottom: 0,
+//     width: "100%",
+//   },
+//   navItem: {
+//     alignItems: "center",
+//     justifyContent: "center",
+//   },
+//   navText: {
+//     fontSize: 11,
+//     color: "#888",
+//     marginTop: 2,
+//   },
+
+// });
+
 import { StyleSheet } from "react-native";
 
 const ORANGE = "#FF9800";
@@ -37,7 +145,6 @@ export const HomeStyles = StyleSheet.create({
     columnGap: 16,
     marginBottom: 30,
     
-    
   },
   actionCard: {
     width: "47%",
@@ -46,7 +153,6 @@ export const HomeStyles = StyleSheet.create({
     borderRadius: 14,
     alignItems: "center",
     elevation: 3,
-    
    
   },
   actionText: {
@@ -54,7 +160,6 @@ export const HomeStyles = StyleSheet.create({
     fontSize: 14,
     fontWeight: "600",
     color: "#333",
-    textAlign: "center",
   },
   section: {
     marginBottom: 20,
@@ -103,6 +208,75 @@ export const HomeStyles = StyleSheet.create({
     color: "#888",
     marginTop: 2,
   },
+  noticeBox: {
+  backgroundColor: "#FFF3E0",
+  padding: 12,
+  borderRadius: 8,
+  marginBottom: 20,
+  borderLeftWidth: 4,
+  borderLeftColor: "#FF9800"
+},
 
+noticeTitle: {
+  fontWeight: "bold",
+  color: "#FF9800",
+  marginBottom: 4,
+  fontSize: 18,
+  textAlign: "center"
+},
+
+noticeMessage: {
+  color: "#E53935",   // red color
+  fontWeight: "bold",
+  fontSize: 20,
+  textAlign: "center"
+},
+ bannerContainer: {
+    marginTop: 20,
+  },
+  bannerTitle: {
+    fontSize: 13,
+    fontWeight: "700",
+    color: "#888",
+    marginBottom: 8,
+    textTransform: "uppercase",
+    letterSpacing: 0.6,
+  },
+  banner: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    padding: 12,
+    borderRadius: 10,
+    marginBottom: 8,
+    borderWidth: 1,
+  },
+  bannerLow: {
+    backgroundColor: "#FFF3E0",
+    borderColor: ORANGE,
+  },
+  bannerFinished: {
+    backgroundColor: "#E53935",
+    borderColor: "#E53935",
+  },
+  bannerLeft: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+    flex: 1,
+  },
+  bannerMeal: {
+    fontWeight: "600",
+    color: "#333",
+    fontSize: 14,
+  },
+  bannerCount: {
+    fontSize: 13,
+    fontWeight: "700",
+    color: ORANGE,
+  },
+  bannerTextWhite: {
+    color: "#fff",
+  },
 });
 
